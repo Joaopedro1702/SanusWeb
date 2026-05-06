@@ -1,0 +1,61 @@
+/*Login box*/
+form.dadosAcesso{
+    background-color: var(--bg-box);
+    width: 450px;
+    height: 450px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    border-radius: 5px;
+    box-shadow: 0px 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.dadosAcesso h1{
+    color: var(--button-color);
+    margin-bottom: 0.5rem;
+    font-size: 1.4rem;
+
+}
+.dadosLogin{
+    width: 70%;
+    height: 36px;
+    padding: 0 0.75rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.dadosAcesso a {
+    font-size: 0.8rem;
+    display: block;
+    text-align: center;
+    text-decoration: none;
+    color: #555;
+    width: 70%;
+
+}
+
+.entrar, .cadastrar {
+    width: 70%;
+    height: 38px;
+    border: none;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    text-align: center;
+
+}
+
+.entrar {
+    background-color: #1a5f8a;
+    color: #fff;
+}
+
+.cadastrar {
+    background-color: transparent;
+    border: 2px solid #1a5f8a;
+    color: #1a5f8a;
+}

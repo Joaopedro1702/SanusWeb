@@ -1,0 +1,58 @@
+:root{
+    --color-bg: #ffffff;
+    --header-bgcolor: #2596be;
+    --button-color: #003366;
+    --menu-colorbtn: #d9e1e3;
+    --bg-box: #f9f9f9;
+}
+*{
+    margin: 0;
+    padding: 0;
+
+}
+
+main{
+    background-color: var(--color-bg);
+}
+
+main.principal {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 60px); /* 60px = altura do header */
+}
+
+/*Header*/
+.topo{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 35px;
+    background-color: var(--header-bgcolor);
+    height: 60px;
+}
+
+#logo{
+    height: 200px;
+    width: auto;
+}
+
+.btnHeader{
+    background-color: var(--menu-colorbtn);
+    border: none;
+    font-size: 0.9rem;
+    font-weight: bold;
+    letter-spacing: 0.1rem;
+    cursor: pointer;
+    padding: 0.4rem 0.8rem;
+}
+
+.btnHeader a {
+    text-decoration: none;
+    color: inherit;
+}
+
+.btnHeader:hover {
+    opacity: 0.75;
+}
+

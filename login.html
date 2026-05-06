@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/stylePadrao.css">
+    <link rel="stylesheet" href="css/styleLoginCadastro.css">
+    <title>Login</title>
+</head>
+<body>
+    <header class="topo">
+        <img src="imagens/SanusLogo.webp" alt="Logo da Sanus." id="logo">
+        <button class="btnHeader" onclick="window.location.href='#'">MENU</button>
+    </header>
+
+    <main class="principal">
+        <form action="#" class="dadosAcesso">
+            <h1>Área de acesso</h1>
+            <input type="email" placeholder="EMAIL" class="dadosLogin">
+            <input type="password" placeholder="SENHA" class="dadosLogin">
+            
+            <a href="#">Esqueceu a senha?</a>
+            
+            <button type="button" class="entrar" onclick="location.href='#'">ENTRAR</button>
+            <button type="button" class="cadastrar" onclick="location.href='cadastro.html'">CADASTRAR</button>
+        </form>
+    </main>
+    <footer>
+
+    </footer>
+    
+    <script>
+        const btn = document.querySelectorAll("cadastrar")
+        console.log(btn)
+    </script>
+</body>
+</html>

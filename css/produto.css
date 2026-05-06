@@ -1,0 +1,267 @@
+        :root {
+            --color-bg: #ffffff;
+            --header-bgcolor: #2596be;
+            --button-color: #003366;
+            --menu-colorbtn: #d9e1e3;
+            --bg-box: #f9f9f9;
+            --accent: #2596be;
+            --star-color: #f5a623;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--color-bg);
+            color: #222;
+        }
+
+        /* ── HEADER ── */
+        .topo {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 2rem;
+            background-color: var(--header-bgcolor);
+            height: 75px;
+            gap: 1rem;
+        }
+
+        #logo { height: 150px; width: auto; }
+
+        .topo-centro {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex: 1;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .topo-centro input {
+            flex: 1;
+            height: 38px;
+            padding: 0 1rem;
+            border: none;
+            border-radius: 4px 0 0 4px;
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        .topo-centro button {
+            height: 38px;
+            padding: 0 0.75rem;
+            background-color: var(--button-color);
+            border: none;
+            border-radius: 0 4px 4px 0;
+            cursor: pointer;
+            color: #fff;
+            font-size: 1rem;
+        }
+
+        .topo-direita {
+            display: flex;
+            align-items: center;
+            gap: 1.2rem;
+        }
+
+        .topo-perfil {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            color: #fff;
+            font-size: 0.7rem;
+            font-weight: bold;
+            letter-spacing: 0.05em;
+            gap: 2px;
+        }
+
+        .topo-perfil svg { width: 36px; height: 36px; fill: #fff; }
+
+        .carrinho-wrap {
+            position: relative;
+            cursor: pointer;
+        }
+
+        .carrinho-wrap svg { width: 36px; height: 36px; fill: #fff; }
+
+        .carrinho-badge {
+            position: absolute;
+            top: -4px;
+            right: -6px;
+            background: red;
+            color: #fff;
+            font-size: 0.65rem;
+            font-weight: bold;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btnHeader {
+            background-color: var(--menu-colorbtn);
+            border: none;
+            font-size: 0.85rem;
+            font-weight: bold;
+            letter-spacing: 0.1rem;
+            cursor: pointer;
+            padding: 0.45rem 1rem;
+            border-radius: 2px;
+        }
+
+        /* ── NAV ── */
+        nav.categorias {
+            background-color: #1e88b0;
+            display: flex;
+            align-items: center;
+            padding: 0 2rem;
+            height: 42px;
+            gap: 2rem;
+        }
+
+        nav.categorias span {
+            color: #d0eaf5;
+            font-size: 0.8rem;
+            font-weight: bold;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        nav.categorias a {
+            color: #fff;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: bold;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            padding: 0 0.25rem;
+            transition: opacity 0.2s;
+        }
+
+        nav.categorias a:hover { opacity: 0.7; }
+        nav.categorias a.ativo { text-decoration: underline; }
+
+        /* ── CONTEÚDO PRINCIPAL ── */
+        main.produto-page {
+            padding: 3rem 4rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .produto-container {
+            display: flex;
+            gap: 3rem;
+            align-items: flex-start;
+        }
+
+        /* Card imagem */
+        .produto-imagem-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            min-width: 280px;
+        }
+
+        .produto-imagem-card {
+            width: 280px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            overflow: hidden;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+        }
+
+        .produto-imagem-card img {
+            width: 100%;
+            height: 360px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .produto-nome-card {
+            background: #fff;
+            padding: 0.75rem;
+            text-align: center;
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: var(--accent);
+            border-top: 1px solid #eee;
+        }
+
+        /* Estrelas */
+        .estrelas {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 1.5rem;
+        }
+
+        .estrela { color: var(--star-color); }
+        .estrela.vazia { color: #ccc; }
+
+        .estrelas span {
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        /* Info produto */
+        .produto-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+        }
+
+        .produto-info h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--accent);
+            line-height: 1.2;
+            text-transform: uppercase;
+        }
+
+        .produto-info h1 span {
+            display: block;
+            font-style: italic;
+        }
+
+        .produto-preco {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #111;
+        }
+
+        .btn-carrinho {
+            background-color: var(--button-color);
+            color: #fff;
+            border: none;
+            padding: 0.85rem 2rem;
+            font-size: 0.9rem;
+            font-weight: bold;
+            letter-spacing: 0.08em;
+            border-radius: 4px;
+            cursor: pointer;
+            align-self: flex-start;
+            transition: background 0.2s;
+        }
+
+        .btn-carrinho:hover { background-color: #002244; }
+
+        .sinopse-label {
+            font-size: 0.85rem;
+            color: #999;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 0.4rem;
+        }
+
+        .sinopse-texto {
+            font-size: 0.95rem;
+            color: var(--accent);
+            font-style: italic;
+            line-height: 1.6;
+        }

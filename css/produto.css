@@ -114,6 +114,9 @@
         }
 
         /* ── NAV ── */
+        nav{
+            align-items: center;
+        }
         nav.categorias {
             background-color: #1e88b0;
             display: flex;

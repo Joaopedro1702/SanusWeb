@@ -29,7 +29,7 @@ main.principal {
     justify-content: space-between;
     padding: 35px;
     background-color: var(--header-bgcolor);
-    height: 60px;
+    height: 100px;
 }
 
 #logo{

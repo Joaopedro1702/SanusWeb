@@ -1,0 +1,23 @@
+.card-produto{
+    background-color: var(--menu-colorbtn);
+    width: 300px;
+    height: 156px;
+    border-radius: 20px;
+    margin-top: 25px;
+}
+.card-produto {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.info-produto {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+img{
+    height: 150px;
+    border-radius: 25px 0px 25px 0px;
+}

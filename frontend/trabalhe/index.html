@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SANUS | Sistemas e Tecnologia Farmacêutica</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;500;700&family=Outfit:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="../src/styles/style.css">
+</head>
+<body>
+    <header class="main-header">
+        <div class="top-bar">
+            <div class="container top-bar-content">
+                <a href="../index.html" class="brand-logo">
+                    <svg class="brand-icon-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <polygon points="50,5 93.3,30 93.3,70 50,95 6.7,70 6.7,30" fill="#001d3a"/>
+                        <polygon points="50,5 93.3,30 50,50 6.7,30" fill="#003d7a" stroke="#00b4d8" stroke-width="1.5"/>
+                        <polygon points="6.7,30 50,50 50,95 6.7,70" fill="#002d5a" stroke="#00b4d8" stroke-width="1.5"/>
+                        <polygon points="50,50 93.3,30 93.3,70 50,95" fill="#001229" stroke="#00b4d8" stroke-width="1.5"/>
+                        <line x1="28.35" y1="17.5" x2="28.35" y2="40" stroke="#00b4d8" stroke-width="1.5" stroke-linecap="round"/>
+                        <line x1="71.65" y1="17.5" x2="71.65" y2="40" stroke="#00b4d8" stroke-width="1.5" stroke-linecap="round"/>
+                        <line x1="28.35" y1="60" x2="50" y2="72.5" stroke="#00b4d8" stroke-width="1.5" stroke-linecap="round"/>
+                        <line x1="71.65" y1="60" x2="50" y2="72.5" stroke="#00b4d8" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                    <div class="brand-text">
+                        <span class="brand-name">SANUS</span>
+                        <span class="brand-sub">SISTEMAS E TECNOLOGIA</span>
+                    </div>
+                </a>
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Buscar medicamento ou receita..." onkeyup="filterProducts('../')">
+                    <button class="search-btn" aria-label="Buscar"><i class="ph ph-magnifying-glass"></i></button>
+                </div>
+                <div class="user-actions">
+                    <button class="action-btn" onclick="openModal('authModal')">
+                        <i class="ph ph-user"></i><span>SEU PERFIL</span>
+                    </button>
+                    <a href="../carrinho/index.html" class="action-btn cart-btn" style="text-decoration: none;">
+                        <i class="ph ph-shopping-cart"></i><span>CARRINHO</span>
+                        <span class="cart-count" id="cartCount">0</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+        <nav class="nav-bar">
+            <div class="container nav-links">
+                <a href="../index.html" class="nav-link ">INÍCIO</a>
+                <a href="../produtos/index.html" class="nav-link ">PRODUTOS</a>
+                <a href="../ajuda/index.html" class="nav-link ">AJUDA</a>
+                <a href="../trabalhe/index.html" class="nav-link active">TRABALHE CONOSCO</a>
+                <a href="../contato/index.html" class="nav-link ">CONTATO</a>
+            </div>
+        </nav>
+    </header>
+    <main id="app">
+
+        <section class="page-view active container section-padding">
+            <h2 class="section-title">TRABALHE CONOSCO</h2>
+            <div class="content-box">
+                <h3>Faça parte do time SANUS</h3>
+                <p>Estamos sempre em busca de profissionais talentosos. Cadastre seu currículo em nosso banco de talentos.</p>
+                <div class="form-group" style="margin-top: 20px;">
+                    <label>LINK PARA SEU LINKEDIN OU PORTFÓLIO</label>
+                    <input type="text" placeholder="https://linkedin.com/in/seu-perfil">
+                </div>
+                <button class="btn btn-primary" onclick="alert('Currículo recebido! Fique de olho no seu e-mail.')">ENVIAR APLICAÇÃO</button>
+            </div>
+        </section>
+    </main>
+
+    <!-- MODAL DE AUTENTICAÇÃO -->
+    <div id="authModal" class="modal-overlay">
+        <div class="modal-box">
+            <button class="modal-close" onclick="closeModal('authModal')"><i class="ph ph-x"></i></button>
+            <div id="auth-login" class="auth-subview active">
+                <h2 class="modal-title">ÁREA DE ACESSO</h2>
+                <form onsubmit="event.preventDefault(); closeModal('authModal');">
+                    <div class="form-group"><label>E-MAIL</label><input type="email" placeholder="seu@email.com" required></div>
+                    <div class="form-group"><label>SENHA</label><input type="password" placeholder="******" required></div>
+                    <a href="#" class="forgot-link" onclick="switchAuthTab('recover')">Esqueceu a senha?</a>
+                    <div class="auth-buttons">
+                        <button type="submit" class="btn btn-primary">ENTRAR</button>
+                        <button type="button" class="btn btn-outline" onclick="switchAuthTab('register')">CADASTRAR</button>
+                    </div>
+                </form>
+            </div>
+            <div id="auth-register" class="auth-subview">
+                <h2 class="modal-title">NOVO REGISTRO</h2>
+                <form onsubmit="event.preventDefault(); switchAuthTab('login');">
+                    <div class="form-group"><label>NOME COMPLETO</label><input type="text" placeholder="Nome completo" required></div>
+                    <div class="form-group"><label>E-MAIL</label><input type="email" placeholder="seu@email.com" required></div>
+                    <div class="form-group"><label>SENHA</label><input type="password" placeholder="******" required></div>
+                    <button type="submit" class="btn btn-primary btn-block">FINALIZAR CADASTRO</button>
+                    <a href="#" class="back-login-link" onclick="switchAuthTab('login')">Já tenho conta, voltar</a>
+                </form>
+            </div>
+            <div id="auth-recover" class="auth-subview">
+                <h2 class="modal-title">RECUPERAR CONTA</h2>
+                <div class="alert-box info"><strong>CÓDIGO ENVIADO</strong><p>Verifique o código de validação em seu e-mail.</p></div>
+                <label class="code-label">INSIRA O CÓDIGO DE 5 DÍGITOS:</label>
+                <div class="code-inputs">
+                    <input type="text" maxlength="1" class="code-digit"><input type="text" maxlength="1" class="code-digit">
+                    <input type="text" maxlength="1" class="code-digit"><input type="text" maxlength="1" class="code-digit">
+                    <input type="text" maxlength="1" class="code-digit">
+                </div>
+                <button type="button" class="btn btn-primary btn-block" onclick="switchAuthTab('reset')">VALIDAR CÓDIGO</button>
+            </div>
+            <div id="auth-reset" class="auth-subview">
+                <h2 class="modal-title">ALTERAÇÃO DE SENHA</h2>
+                <form onsubmit="event.preventDefault(); switchAuthTab('login');">
+                    <div class="form-group"><label>NOVA SENHA</label><input type="password" placeholder="******" required></div>
+                    <button type="submit" class="btn btn-primary btn-block">ALTERAR SENHA</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <footer class="main-footer" id="contato-footer">
+        <div class="container footer-grid">
+            <div class="footer-col">
+                <div class="brand-logo footer-brand">
+                    <svg class="brand-icon-svg" style="width: 40px; height: 40px;" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <polygon points="50,5 93.3,30 93.3,70 50,95 6.7,70 6.7,30" fill="#001d3a"/>
+                        <polygon points="50,5 93.3,30 50,50 6.7,30" fill="#003d7a" stroke="#00b4d8" stroke-width="1.5"/>
+                        <polygon points="6.7,30 50,50 50,95 6.7,70" fill="#002d5a" stroke="#00b4d8" stroke-width="1.5"/>
+                        <polygon points="50,50 93.3,30 93.3,70 50,95" fill="#001229" stroke="#00b4d8" stroke-width="1.5"/>
+                        <line x1="28.35" y1="17.5" x2="28.35" y2="40" stroke="#00b4d8" stroke-width="1.5" />
+                        <line x1="71.65" y1="17.5" x2="71.65" y2="40" stroke="#00b4d8" stroke-width="1.5" />
+                        <line x1="28.35" y1="60" x2="50" y2="72.5" stroke="#00b4d8" stroke-width="1.5" />
+                        <line x1="71.65" y1="60" x2="50" y2="72.5" stroke="#00b4d8" stroke-width="1.5" />
+                    </svg>
+                    <div class="brand-text" style="color: #ffffff;">
+                        <span class="brand-name" style="color: #ffffff;">SANUS</span>
+                        <span class="brand-sub" style="color: #00b4d8;">SISTEMAS E TECNOLOGIA</span>
+                    </div>
+                </div>
+                <p>Sistemas e Tecnologia em Saúde. Garantindo segurança e inovação no seu atendimento farmacêutico.</p>
+            </div>
+            <div class="footer-col">
+                <h4>CONTATO</h4>
+                <p><strong>E-mail Oficial:</strong> suporte@sanus.com.br</p>
+                <p><strong>Atendimento:</strong> (11) 99999-0000</p>
+            </div>
+            <div class="footer-col">
+                <h4>NAVEGAÇÃO</h4>
+                <ul>
+                    <li><a href="../index.html">Início</a></li>
+                    <li><a href="../ajuda/index.html">Ajuda e Suporte</a></li>
+                    <li><a href="../termos/index.html">Termos de Uso</a></li>
+                    <li><a href="../termos/index.html">Política de Privacidade</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 SANUS Sistemas e Tecnologia. Todos os direitos reservados.</p>
+        </div>
+    </footer>
+    <script>window.ROOT_PATH = "../";</script>
+    <script src="../src/scripts/data.js"></script>
+    <script src="../src/scripts/main.js"></script>
+</body>
+</html>

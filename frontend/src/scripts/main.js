@@ -1,16 +1,113 @@
 
+const API_URL = "https://sanus-backend.onrender.com/api";
+
 document.addEventListener("DOMContentLoaded", () => {
     updateCartCount();
+    configurarLogin();
+
     if (document.getElementById("productGrid")) {
-        renderProducts(products, "productGrid");
+        if (localStorage.getItem("sanus_token")) {
+            carregarProdutos();
+        } else {
+            openModal("authModal");
+        }
     }
+
     if (document.getElementById("cartItemsList")) {
         renderCart();
     }
+
     if (document.getElementById("checkoutTotal")) {
         updateCheckoutSummary();
     }
 });
+
+async function carregarProdutos() {
+    const token = localStorage.getItem("sanus_token");
+
+    if (!token) {
+        openModal("authModal");
+        return;
+    }
+
+    try {
+        const resposta = await fetch(`${API_URL}/produtos`, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
+
+        if (resposta.status === 401) {
+            localStorage.removeItem("sanus_token");
+            localStorage.removeItem("sanus_usuario");
+            openModal("authModal");
+            return;
+        }
+
+        if (!resposta.ok) {
+            throw new Error("Não foi possível carregar os produtos.");
+        }
+
+        const produtosDaApi = await resposta.json();
+
+        products = produtosDaApi.map((produto) => ({
+            id: produto.id,
+            title: produto.nome,
+            description: produto.descricao,
+            price: Number(produto.preco),
+            oldPrice: Number(produto.preco),
+            badge: produto.tarja || "",
+            icon: "ph-pill"
+        }));
+
+        renderProducts(products, "productGrid");
+    } catch (erro) {
+        console.error(erro);
+        alert("Não foi possível carregar os produtos. Tente novamente em instantes.");
+    }
+}
+
+function configurarLogin() {
+    const formulario = document.querySelector("#auth-login form");
+    if (!formulario) return;
+
+    formulario.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+
+        const [campoEmail, campoSenha] = formulario.querySelectorAll("input");
+
+        try {
+            await fazerLogin(campoEmail.value, campoSenha.value);
+            closeModal("authModal");
+
+            if (document.getElementById("productGrid")) {
+                carregarProdutos();
+            }
+        } catch (erro) {
+            alert(erro.message);
+        }
+    }, true);
+}
+
+async function fazerLogin(email, senha) {
+    const resposta = await fetch(`${API_URL}/login`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ email, senha })
+    });
+
+    const dados = await resposta.json();
+
+    if (!resposta.ok) {
+        throw new Error(dados.error || "Não foi possível entrar.");
+    }
+
+    localStorage.setItem("sanus_token", dados.token);
+    localStorage.setItem("sanus_usuario", dados.nome);
+}
 
 function renderProducts(items, targetId) {
     const grid = document.getElementById(targetId);

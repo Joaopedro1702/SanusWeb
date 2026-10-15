@@ -4,6 +4,7 @@ const API_URL = "https://sanus-backend.onrender.com/api";
 document.addEventListener("DOMContentLoaded", () => {
     updateCartCount();
     configurarLogin();
+    configurarCadastro();
 
     if (document.getElementById("productGrid")) {
         if (localStorage.getItem("sanus_token")) {
@@ -107,6 +108,68 @@ async function fazerLogin(email, senha) {
 
     localStorage.setItem("sanus_token", dados.token);
     localStorage.setItem("sanus_usuario", dados.nome);
+}
+
+function configurarCadastro() {
+    const formulario = document.querySelector("#auth-register form");
+    if (!formulario) return;
+
+    const campoEmail = formulario.querySelector('input[type="email"]');
+
+    if (!formulario.querySelector("#cadastroCpf")) {
+        const grupoCpf = document.createElement("div");
+        grupoCpf.className = "form-group";
+        grupoCpf.innerHTML = '<label>CPF</label><input id="cadastroCpf" type="text" inputmode="numeric" pattern="[0-9]{11}" maxlength="11" placeholder="Somente números" required>';
+        campoEmail.closest(".form-group").insertAdjacentElement("afterend", grupoCpf);
+
+        const grupoDataNascimento = document.createElement("div");
+        grupoDataNascimento.className = "form-group";
+        grupoDataNascimento.innerHTML = '<label>DATA DE NASCIMENTO</label><input id="cadastroDataNascimento" type="date" required>';
+        grupoCpf.insertAdjacentElement("afterend", grupoDataNascimento);
+    }
+
+    formulario.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+
+        const [campoNome, campoEmailCadastro, campoSenha] = formulario.querySelectorAll("input:not(#cadastroCpf):not(#cadastroDataNascimento)");
+        const campoCpf = formulario.querySelector("#cadastroCpf");
+        const campoDataNascimento = formulario.querySelector("#cadastroDataNascimento");
+
+        try {
+            await criarUsuario(
+                campoNome.value,
+                campoCpf.value,
+                campoEmailCadastro.value,
+                campoSenha.value,
+                campoDataNascimento.value
+            );
+
+            document.querySelector('#auth-login input[type="email"]').value = campoEmailCadastro.value;
+            switchAuthTab("login");
+            alert("Cadastro realizado. Agora informe sua senha para entrar.");
+        } catch (erro) {
+            alert(erro.message);
+        }
+    }, true);
+}
+
+async function criarUsuario(nome, cpf, email, senha, data_Nasc) {
+    const resposta = await fetch(`${API_URL}/usuarios`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ nome, cpf, email, senha, data_Nasc })
+    });
+
+    const dados = await resposta.json();
+
+    if (!resposta.ok) {
+        throw new Error(dados.error || "Não foi possível concluir o cadastro.");
+    }
+
+    return dados;
 }
 
 function renderProducts(items, targetId) {

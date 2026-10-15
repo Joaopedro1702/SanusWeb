@@ -1,0 +1,112 @@
+clienteEnderecoRepository.js
+  - criarClienteEndereco
+  - buscarClienteEnderecoPorId
+  - atualizarClienteEndereco
+  - deletarClienteEndereco
+
+clienteRepository.js
+  - criarCliente
+  - buscarClientePorId
+  - buscarClientePorUsuarioId
+  - listarClientes
+  - atualizarCliente
+  - deletarCliente
+
+compraRepository.js
+  - criarCompra
+  - buscarCompraPorId
+  - atualizarCompra
+  - deletarCompra
+
+enderecoRepository.js
+  - criarEndereco
+  - buscarEnderecoPorId
+  - buscarEnderecoPorCep
+  - listarEnderecos
+  - atualizarEndereco
+  - deletarEndereco
+
+estoqueRepository.js
+  - criarEstoque
+  - buscarEstoquePorId
+  - atualizarEstoque
+  - deletarEstoque
+
+fornecedorEnderecoRepository.js
+  - criarFornecedorEndereco
+  - buscarFornecedorEnderecoPorId
+  - atualizarFornecedorEndereco
+  - deletarFornecedorEndereco
+
+fornecedorRepository.js
+  - cadastroFornecedor
+  - atualizarFornecedor
+  - listarFornecedores
+  - listarFornecedoresPorId
+  - listarFornecedoresPorCnpj
+  - deletarFornecedor
+
+funcionarioRepository.js
+  - criarFuncionario
+  - buscarFuncionarioPorId
+  - buscarFuncionarioPorUsuarioId
+  - listarFuncionario
+  - atualizarFuncionario
+  - deletarFuncionario
+
+loteRepository.js
+  - criarLote
+  - buscarLotePorId
+  - atualizarLote
+  - deletarLote
+
+pagamentoVendaRepository.js
+  - criarPagamentoVenda
+  - buscarPagamentoVendaPorId
+  - atualizarPagamentoVenda
+  - deletarPagamentoVenda
+
+produtoCompraRepository.js
+  - criarProdutoCompra
+  - buscarProdutoCompraPorId
+  - atualizarProdutoCompra
+  - deletarProdutoCompra
+
+produtoRepository.js
+  - cadastroProduto
+  - atualizarProduto
+  - listarProdutos
+  - listaProdutosPorId
+  - listarProdutosPorCnpj
+  - deletarProduto
+
+produtoVendaRepository.js
+  - criarProdutoVenda
+  - buscarProdutoVendaPorId
+  - atualizarProdutoVenda
+  - deletarProdutoVenda
+
+telefoneFornecedorRepository.js
+  - criarTelefoneFornecedor
+  - buscarTelefoneFornecedorPorId
+  - atualizarTelefoneFornecedor
+  - deletarTelefoneFornecedor
+
+telefoneUsuarioRepository.js
+  - criarTelefoneUsuario
+  - buscarTelefoneUsuarioPorId
+  - atualizarTelefoneUsuario
+  - deletarTelefoneUsuario
+
+usuarioRepository.js
+  - criarUsuario
+  - buscarUsuarioPorId
+  - buscarUsuarioPorCpf
+  - atualizarUsuario
+  - deletarUsuario
+
+vendaRepository.js
+  - criarVenda
+  - buscarVendaPorId
+  - atualizarVenda
+  - deletarVenda

@@ -2,10 +2,10 @@ const db = require("../connection/db");
 
 //Criando fornecedor
 
-async function cadastroFornecedor({nome, cnpj, email}){
+async function cadastroFornecedor({nome, cnpj, email, telefone, cep, logradouro, bairro, cidade, uf, id_Fornecedor, id_Endereço, numero, complemento, referencia}){
     const [result] = await db.query(
-        "INSERT INTO Tbl_Fornecedor (nome, cnpj, email) VALUES (?, ?, ?)",
-    [nome, cnpj, email]
+        "CALL sp_AddFornecedor (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    [nome, cnpj, email, telefone, cep, logradouro, bairro, cidade, uf, id_Fornecedor, id_Endereço, numero, complemento, referencia]
     );
     return result;
 

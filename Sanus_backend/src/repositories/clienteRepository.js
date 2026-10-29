@@ -1,16 +1,15 @@
 const db = require("../connection/db");
 
 //Criando Cliente
-
-async function criarCliente({id_Usuario, aceita_Ofertas}) {
+async function criarCliente({nome, cpf, email, senha, data_Nasc, telefone, aceitaOfertas}){
+    
+    const senhaHash = await bcrypt.hash(senha, SALT_ROUND);
     const [result] = await db.query(
-        `INSERT INTO Tbl_Cliente (id_Usuario, aceita_Ofertas)
-         VALUES (?, ?)`,
-        [id_Usuario, aceita_Ofertas]
+        "CALL sp_AddCliente (?, ?, ?, ?, ?, ?, ?)",
+        [nome, cpf, email, senhaHash, data_Nasc, telefone, aceitaOfertas]
     );
-
     return result;
-}
+};
 
 //Buscando cliente por Id
 async function buscarClientePorId({id}){
@@ -29,6 +28,24 @@ async function buscarClientePorUsuarioId({id_Usuario}){
         [id_Usuario]
     );
     return result
+}
+
+async function visualizarCliente({id_Usuario}){
+    const [result] = await db.query(
+        "CALL sp_ViewCliente(?)",
+        [id_Usuario]
+    );
+    return result[0];
+}
+
+//Função para o "Minha conta" do cliente, onde lee vai poder ver
+//seus dados cadastrais e altera-los.
+async function visualizarContaCliente({id_Usuario}){
+    const [result] = await db.query(
+        "CALL sp_ViewContaCliente",
+        [id_Usuario]
+    );
+    return result[0];
 }
 
 //Função de listar usuários
@@ -65,6 +82,8 @@ module.exports = {
     criarCliente,
     buscarClientePorId,
     buscarClientePorUsuarioId,
+    visualizarCliente,
+    visualizarContaCliente,
     listarClientes,
     atualizarCliente,
     deletarCliente

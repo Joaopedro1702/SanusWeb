@@ -2,12 +2,12 @@ const db = require("../connection/db");
 const bcrypt = require("bcryptjs");
 const SALT_ROUND = 10;
 //Criando usuário
-async function criarUsuario({nome, cpf, email, senha, data_Nasc}){
+async function criarUsuario({nome, cpf, email, senha, data_Nasc, telefone, idUsuario}){
     
     const senhaHash = await bcrypt.hash(senha, SALT_ROUND);
     const [result] = await db.query(
-        "INSERT INTO Tbl_Usuario (nome, cpf, email, senha, data_Nasc) VALUES (?, ?, ?, ?, ?)",
-        [nome, cpf, email, senhaHash, data_Nasc]
+        "CALL sp_AddUsuario (?, ?, ?, ?, ?, ?, ?)",
+        [nome, cpf, email, senhaHash, data_Nasc, telefone, idUsuario]
     );
     return result;
 }

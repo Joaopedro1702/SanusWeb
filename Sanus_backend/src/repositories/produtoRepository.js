@@ -41,6 +41,15 @@ async function listaProdutosPorId({id}){
     );
     return result
 }
+
+//Procedure para ver quantidade de produtos vindo direto do banco de dados em MySQL
+async function viewQuantidadeProduto(id_Produto){
+    const [result] = await db.query(
+        "CALL sp_ViewQntProduto",
+        [id_Produto]
+    );
+    return result[0];
+}
 /*
 //Buscando por preco
 async function listarProdutosPorCnpj({preco}){

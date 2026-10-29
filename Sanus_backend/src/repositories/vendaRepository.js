@@ -1,19 +1,29 @@
 const db = require("../connection/db");
 
 //Criando venda
-async function criarVenda({id_Cliente, id_Funcionario, nfe, valor, data_Venda, canal_Venda}){
+async function criarVenda({id_Cliente, id_Funcionario, nfe, canal_Venda, forma_Pagamento, valor_Pago,
+    valor_Recebido, situacao, itens
+}){
     const [result] = await db.query(
-        "INSERT INTO Tbl_Venda (id_Cliente, id_Funcionario, nfe, valor, data_Venda, canal_Venda) VALUES (?, ?, ?, ?, ?, ?)",
-        [id_Cliente, id_Funcionario, nfe, valor, data_Venda, canal_Venda]
+        "CALL sp_RealizarVenda(?, ?, ?, ?, ? ,?, ?, ?, ?)"
+        [id_Cliente, id_Funcionario, nfe, canal_Venda, forma_Pagamento, valor_Pago, valor_Recebido, situacao, JSON.stringify(itens)]
+    );
+    return result;
+}
+
+//Busca todas as vendas sem fitro
+async function buscarVenda(){
+    const [result] = await db.query(
+        "CALL sp_ViewVendas"
     );
     return result;
 }
 
 //Criando função de buscar venda por id
-async function buscarVendaPorId({id}){
+async function buscarVendaPorId({id_venda}){
     const [result] = await db.query(
-        "SELECT * FROM Tbl_Venda WHERE id = ?",
-        [id]
+        "CALL sp_ViewVendas",
+        [id_venda]
     );
     return result;
 }

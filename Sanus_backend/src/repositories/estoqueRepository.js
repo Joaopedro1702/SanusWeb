@@ -9,6 +9,23 @@ async function criarEstoque({id_Lote, posicao}){
     return result;
 }
 
+//Função que será responsável por ver os produtos que estã faltando no estoque
+//
+//nela eu chamo a procedure sp_reporEstoque, nela tem o JSON.stringify(itens)
+//que vai servir para transformar o array de JavaScript em texto
+//a procedure recebe p_itens como LONGTEXT, ou seja, uma string. O MySQL,
+//não entende um array do node, então cnvertemos antes.
+//Sem o stringify, mysql12 tentaria expandir o array em vários valores soltos (? vira 1, 2, 3...)
+//e o número de parâmetros deixaria de bater com a procedure.
+//RESUMINDO: O array vai como um único texto, e o banco o "desmonta" lá dentro.
+async function reporEstoque({id_Fornecedor, total_Compra, itens}){
+    const [result] = await db.query(
+        "CALL sp_ReporEstoque(?, ?, ?)"
+        [id_Fornecedor, total_Compra, JSON.stringify(itens)]
+    );
+    return result;
+}
+
 //Criando função de buscar estoque por id
 async function buscarEstoquePorId({id}){
     const [result] = await db.query(
@@ -41,6 +58,7 @@ async function deletarEstoque({id}){
 //Utilizando todas as funções
 module.exports = {
     criarEstoque,
+    reporEstoque,
     buscarEstoquePorId,
     atualizarEstoque,
     deletarEstoque

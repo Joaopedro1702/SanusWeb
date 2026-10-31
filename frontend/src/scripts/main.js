@@ -1,5 +1,27 @@
 
-const API_URL = "https://sanus-backend.onrender.com/api";
+//const API_URL = "https://sanus-backend.onrender.com/api";
+//const API_URL = "http://localhost:3000/api";
+const API_URL = "http://127.0.0.1:3000/api";
+
+function exibirMensagem(texto, tipo = "info") {
+    const titulos = {
+        success: "Sucesso!",
+        error: "Ops!",
+        warning: "Atenção",
+        info: "Aviso"
+    };
+
+    return Swal.fire({
+        icon: tipo,
+        title: titulos[tipo] || titulos.info,
+        text: texto,
+        confirmButtonText: "Entendi",
+        confirmButtonColor: "#0077c8",
+        customClass: {
+            popup: "sanus-swal"
+        }
+    });
+}
 
 document.addEventListener("DOMContentLoaded", () => {
     updateCartCount();
@@ -64,7 +86,7 @@ async function carregarProdutos() {
         renderProducts(products, "productGrid");
     } catch (erro) {
         console.error(erro);
-        alert("Não foi possível carregar os produtos. Tente novamente em instantes.");
+        exibirMensagem("Não foi possível carregar os produtos. Tente novamente em instantes.", "error");
     }
 }
 
@@ -86,7 +108,7 @@ function configurarLogin() {
                 carregarProdutos();
             }
         } catch (erro) {
-            alert(erro.message);
+            exibirMensagem(erro.message, "error");
         }
     }, true);
 }
@@ -119,7 +141,7 @@ function configurarCadastro() {
     if (!formulario.querySelector("#cadastroCpf")) {
         const grupoCpf = document.createElement("div");
         grupoCpf.className = "form-group";
-        grupoCpf.innerHTML = '<label>CPF</label><input id="cadastroCpf" type="text" inputmode="numeric" pattern="[0-9]{11}" maxlength="11" placeholder="Somente números" required>';
+        grupoCpf.innerHTML = '<label>CPF</label><input id="cadastroCpf" type="text" inputmode="numeric" pattern="[0-9]{3}\\.[0-9]{3}\\.[0-9]{3}-[0-9]{2}" maxlength="14" placeholder="000.000.000-00" required>';
         campoEmail.closest(".form-group").insertAdjacentElement("afterend", grupoCpf);
 
         const grupoDataNascimento = document.createElement("div");
@@ -128,18 +150,30 @@ function configurarCadastro() {
         grupoCpf.insertAdjacentElement("afterend", grupoDataNascimento);
     }
 
+    const campoCpf = formulario.querySelector("#cadastroCpf");
+
+    campoCpf.addEventListener("input", () => {
+        let cpf = campoCpf.value.replace(/\D/g, "").slice(0, 11);
+
+        cpf = cpf
+            .replace(/(\d{3})(\d)/, "$1.$2")
+            .replace(/(\d{3})(\d)/, "$1.$2")
+            .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+
+        campoCpf.value = cpf;
+    });
+
     formulario.addEventListener("submit", async (event) => {
         event.preventDefault();
         event.stopImmediatePropagation();
 
         const [campoNome, campoEmailCadastro, campoSenha] = formulario.querySelectorAll("input:not(#cadastroCpf):not(#cadastroDataNascimento)");
-        const campoCpf = formulario.querySelector("#cadastroCpf");
         const campoDataNascimento = formulario.querySelector("#cadastroDataNascimento");
 
         try {
             await criarUsuario(
                 campoNome.value,
-                campoCpf.value,
+                campoCpf.value.replace(/\D/g, ""),
                 campoEmailCadastro.value,
                 campoSenha.value,
                 campoDataNascimento.value
@@ -147,9 +181,9 @@ function configurarCadastro() {
 
             document.querySelector('#auth-login input[type="email"]').value = campoEmailCadastro.value;
             switchAuthTab("login");
-            alert("Cadastro realizado. Agora informe sua senha para entrar.");
+            exibirMensagem("Cadastro realizado. Agora informe sua senha para entrar.", "success");
         } catch (erro) {
-            alert(erro.message);
+            exibirMensagem(erro.message, "error");
         }
     }, true);
 }
@@ -216,7 +250,7 @@ function addToCart(id) {
         let cart = getCart();
         cart.push(product);
         saveCart(cart);
-        alert(`${product.title} foi adicionado ao seu carrinho.`);
+        exibirMensagem(`${product.title} foi adicionado ao seu carrinho.`, "success");
     }
 }
 
@@ -285,7 +319,7 @@ function selectPaymentMethod(method) {
 
 function processPayment() {
     let cart = getCart();
-    if (cart.length === 0) { alert("O seu carrinho está vazio."); return; }
+    if (cart.length === 0) { exibirMensagem("O seu carrinho está vazio.", "warning"); return; }
     const cardNum = document.getElementById("cardNum").value;
     const isCard = !document.getElementById("form-card-section").classList.contains("hidden");
     if (isCard && cardNum.startsWith("0000")) {
@@ -298,7 +332,7 @@ function processPayment() {
 
 function copyPixCode() {
     navigator.clipboard.writeText("00020126580014BR.GOV.BCB.PIX0114SANUSPAGAMENTOS");
-    alert("Código PIX copiado.");
+    exibirMensagem("Código PIX copiado.", "success");
 }
 
 function openModal(id) { const m = document.getElementById(id); if(m) m.classList.add("active"); }

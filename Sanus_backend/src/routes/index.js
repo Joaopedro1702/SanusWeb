@@ -11,7 +11,7 @@ const dashboardController = require("../controllers/dashboardController.js")
 const usuarioRepo = require("../repositories/usuarioRepository.js");
 const { autenticar } = require("../middleware/auth.js");
 const usuario = require("../repositories/usuarioRepository");
-
+const validarCpf = require("../middleware/validaCpf.js");
 //login
 
 router.post("/login", async (req, res) => {
@@ -29,7 +29,8 @@ router.post("/login", async (req, res) => {
     }
 });
 
-router.post("/usuarios", criarCtl(usuario.criarUsuario));
+
+router.post("/usuarios",validarCpf , criarCtl(usuario.criarUsuario));
 
 //autenticar token
 

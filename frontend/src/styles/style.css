@@ -77,6 +77,9 @@ h1, h2, h3, h4 { font-family: var(--font-heading); }
 .btn-outline { background: transparent; border: 2px solid var(--sanus-blue-main); color: var(--sanus-blue-main); }
 .btn-outline:hover { background-color: var(--sanus-blue-main); color: #fff; }
 .btn-block { width: 100%; }
+.sanus-swal { border-radius: var(--radius-md); font-family: var(--font-body); }
+.sanus-swal .swal2-title { color: var(--sanus-blue-dark); font-family: var(--font-heading); }
+.sanus-swal .swal2-html-container { color: var(--sanus-text-muted); }
 .btn-back { background: none; border: none; color: var(--sanus-blue-main); font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; margin-bottom: 20px; font-family: var(--font-body); font-size: 14px; }
 .cart-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 30px; }
 .cart-items-list { background: var(--sanus-surface); padding: 20px; border-radius: var(--radius-md); box-shadow: var(--shadow-subtle); }

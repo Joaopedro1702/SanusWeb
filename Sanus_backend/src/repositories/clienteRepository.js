@@ -1,4 +1,6 @@
 const db = require("../connection/db");
+const bcrypt = require("bcryptjs");
+const SALT_ROUND = 10;
 
 //Criando Cliente
 async function criarCliente({nome, cpf, email, senha, data_Nasc, telefone, aceitaOfertas}){
@@ -30,22 +32,34 @@ async function buscarClientePorUsuarioId({id_Usuario}){
     return result
 }
 
-async function visualizarCliente({id_Usuario}){
-    const [result] = await db.query(
-        "CALL sp_ViewCliente(?)",
-        [id_Usuario]
-    );
-    return result[0];
+async function visualizarCliente({id, id_Usuario}){
+    const idUsuario = id ?? id_Usuario;
+    const connection = await db.getConnection();
+
+    try {
+        // As procedures existentes leem @id_Cliente; a variável de sessão
+        // precisa ser definida na mesma conexão do CALL.
+        await connection.query("SET @id_Cliente = ?", [idUsuario]);
+        const [result] = await connection.query("CALL sp_ViewCliente(?)", [idUsuario]);
+        return result[0];
+    } finally {
+        connection.release();
+    }
 }
 
 //Função para o "Minha conta" do cliente, onde lee vai poder ver
 //seus dados cadastrais e altera-los.
-async function visualizarContaCliente({id_Usuario}){
-    const [result] = await db.query(
-        "CALL sp_ViewContaCliente",
-        [id_Usuario]
-    );
-    return result[0];
+async function visualizarContaCliente({id, id_Usuario}){
+    const idUsuario = id ?? id_Usuario;
+    const connection = await db.getConnection();
+
+    try {
+        await connection.query("SET @id_Cliente = ?", [idUsuario]);
+        const [result] = await connection.query("CALL sp_ViewContaCliente(?)", [idUsuario]);
+        return result[0];
+    } finally {
+        connection.release();
+    }
 }
 
 //Função de listar usuários

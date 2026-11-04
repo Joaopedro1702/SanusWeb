@@ -20,7 +20,7 @@ async function criarEstoque({id_Lote, posicao}){
 //RESUMINDO: O array vai como um único texto, e o banco o "desmonta" lá dentro.
 async function reporEstoque({id_Fornecedor, total_Compra, itens}){
     const [result] = await db.query(
-        "CALL sp_ReporEstoque(?, ?, ?)"
+        "CALL sp_ReporEstoque(?, ?, ?)",
         [id_Fornecedor, total_Compra, JSON.stringify(itens)]
     );
     return result;

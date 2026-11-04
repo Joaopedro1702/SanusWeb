@@ -1,7 +1,7 @@
 
-//const API_URL = "https://sanus-backend.onrender.com/api";
-//const API_URL = "http://localhost:3000/api";
-const API_URL = "http://127.0.0.1:3000/api";
+const API_URL = ["localhost", "127.0.0.1"].includes(window.location.hostname)
+    ? "http://127.0.0.1:3000/api"
+    : "https://sanus-backend.onrender.com/api";
 
 function exibirMensagem(texto, tipo = "info") {
     const titulos = {
@@ -42,6 +42,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (document.getElementById("checkoutTotal")) {
         updateCheckoutSummary();
+    }
+
+    if (document.getElementById("paymentStatus")) {
+        verificarStatusPedido();
     }
 });
 
@@ -317,16 +321,85 @@ function selectPaymentMethod(method) {
     }
 }
 
-function processPayment() {
-    let cart = getCart();
-    if (cart.length === 0) { exibirMensagem("O seu carrinho está vazio.", "warning"); return; }
-    const cardNum = document.getElementById("cardNum").value;
-    const isCard = !document.getElementById("form-card-section").classList.contains("hidden");
-    if (isCard && cardNum.startsWith("0000")) {
-        window.location.href = window.ROOT_PATH + "falha/index.html"; 
-    } else {
-        saveCart([]); 
-        window.location.href = window.ROOT_PATH + "sucesso/index.html";
+async function processPayment() {
+    const cart = getCart();
+    if (cart.length === 0) {
+        exibirMensagem("O seu carrinho está vazio.", "warning");
+        return;
+    }
+
+    const token = localStorage.getItem("sanus_token");
+    if (!token) {
+        exibirMensagem("Entre na sua conta para continuar com o pagamento.", "warning");
+        openModal("authModal");
+        return;
+    }
+
+    const quantidades = new Map();
+    for (const item of cart) {
+        const id = Number(item.id);
+        if (Number.isInteger(id) && id > 0) quantidades.set(id, (quantidades.get(id) || 0) + 1);
+    }
+
+    try {
+        const resposta = await fetch(`${API_URL}/checkout`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+                itens: [...quantidades].map(([produtoId, quantidade]) => ({ produtoId, quantidade })),
+            }),
+        });
+        const dados = await resposta.json();
+        if (!resposta.ok) throw new Error(dados.error || "Não foi possível iniciar o pagamento.");
+        window.location.assign(dados.checkoutUrl);
+    } catch (error) {
+        console.error(error);
+        exibirMensagem(error.message, "error");
+    }
+}
+
+async function verificarStatusPedido() {
+    const referencia = new URLSearchParams(window.location.search).get("referencia");
+    const statusElement = document.getElementById("paymentStatus");
+    const orderElement = document.getElementById("orderId");
+    if (!referencia || !statusElement) {
+        statusElement.textContent = "Não foi possível localizar a referência deste pagamento.";
+        return;
+    }
+
+    if (orderElement) orderElement.textContent = referencia;
+    const token = localStorage.getItem("sanus_token");
+    if (!token) {
+        statusElement.textContent = "Entre na sua conta para consultar o status do pedido.";
+        return;
+    }
+
+    for (let tentativa = 0; tentativa < 10; tentativa += 1) {
+        try {
+            const resposta = await fetch(`${API_URL}/pedidos/${encodeURIComponent(referencia)}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            const pedido = await resposta.json();
+            if (!resposta.ok) throw new Error(pedido.error || "Falha ao consultar o pedido.");
+
+            if (pedido.status === "approved") {
+                statusElement.textContent = "Pagamento aprovado pelo Mercado Pago.";
+                saveCart([]);
+                return;
+            }
+            if (["rejected", "cancelled", "refunded", "charged_back"].includes(pedido.status)) {
+                statusElement.textContent = "O pagamento não foi aprovado. Você pode tentar novamente pelo carrinho.";
+                return;
+            }
+            statusElement.textContent = "Pagamento recebido; aguardando confirmação do Mercado Pago…";
+        } catch (error) {
+            statusElement.textContent = error.message;
+            return;
+        }
+        await new Promise((resolve) => window.setTimeout(resolve, 2000));
     }
 }
 

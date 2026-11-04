@@ -6,7 +6,7 @@ const db = require("../connection/db");
 
 async function criarEndereco({cep, logradouro, bairro, cidade, uf}) {
     const [result] = await db.query(
-        "INSERT INTO Tbl_Endereco (cep, logradouro, bairro, cidade, uf) VALUES (?, ?, ?, ?, ?)",
+        "CALL sp_addEndereco(?, ?, ?, ?, ?)",
         [cep, logradouro, bairro, cidade, uf]
 
     );
@@ -45,7 +45,7 @@ async function atualizarEndereco({id, cep, logradouro, bairro, cidade, uf}){
     const [result] = await db.query(
         `UPDATE Tbl_Endereco
         SET cep = ?, logradouro = ?, bairro = ?, cidade = ?, uf = ?
-        WHERE id = ?,
+        WHERE id = ?
         `,
         [cep, logradouro, bairro, cidade, uf, id]
     );

@@ -3,13 +3,21 @@ const bcrypt = require("bcryptjs");
 const SALT_ROUND = 10;
 //Criando usuário
 async function criarUsuario({nome, cpf, email, senha, data_Nasc, telefone, idUsuario}){
-    
     const senhaHash = await bcrypt.hash(senha, SALT_ROUND);
-    const [result] = await db.query(
-        "CALL sp_AddUsuario (?, ?, ?, ?, ?, ?, ?)",
-        [nome, cpf, email, senhaHash, data_Nasc, telefone, idUsuario]
-    );
-    return result;
+    const connection = await db.getConnection();
+
+    try {
+        await connection.query(
+            "CALL sp_AddUsuario(?, ?, ?, ?, ?, ?, @novo_usuario_id)",
+            [nome, cpf, email, senhaHash, data_Nasc, telefone]
+        );
+        const [[resultado]] = await connection.query(
+            "SELECT @novo_usuario_id AS insertId"
+        );
+        return resultado;
+    } finally {
+        connection.release();
+    }
 }
 
 //Criando função de buscar usuário por id

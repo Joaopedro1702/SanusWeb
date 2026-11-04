@@ -60,23 +60,10 @@
         <section class="page-view active container section-padding">
             <div class="checkout-card">
                 <h2 class="checkout-title">RESUMO E PAGAMENTO</h2>
-                <div class="payment-methods">
-                    <label class="method-tab active" id="tab-card" onclick="selectPaymentMethod('card')"><input type="radio" name="paymentMethod" value="card" checked><span>Cartão de Crédito</span></label>
-                    <label class="method-tab" id="tab-pix" onclick="selectPaymentMethod('pix')"><input type="radio" name="paymentMethod" value="pix"><span>PIX</span></label>
-                </div>
                 <div id="form-card-section" class="payment-form-section">
-                    <div class="form-group"><label>NÚMERO DO CARTÃO</label><input type="text" placeholder="0000 0000 0000 0000" maxlength="19" id="cardNum"></div>
-                    <div class="form-row">
-                        <div class="form-group"><label>VALIDADE</label><input type="text" placeholder="MM/AA" maxlength="5"></div>
-                        <div class="form-group"><label>CVV</label><input type="text" placeholder="123" maxlength="4"></div>
-                    </div>
-                    <div class="form-group"><label>NOME IMPRESSO NO CARTÃO</label><input type="text" placeholder="NOME DO TITULAR"></div>
-                </div>
-                <div id="pix-section" class="payment-form-section hidden">
-                    <div class="pix-box">
-                        <div class="qr-placeholder"><i class="ph ph-qr-code" style="font-size: 120px; color: var(--sanus-blue-main);"></i></div>
-                        <p>Abra o app do seu banco e escaneie a imagem para concluir o pagamento.</p>
-                        <button class="btn btn-outline" onclick="copyPixCode()">COPIAR CÓDIGO PIX</button>
+                    <div class="alert-box info">
+                        <strong>PAGAMENTO SEGURO</strong>
+                        <p>Você será direcionado ao Mercado Pago para escolher PIX ou cartão e concluir o pagamento.</p>
                     </div>
                 </div>
                 <div class="checkout-summary-box">

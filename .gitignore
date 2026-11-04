@@ -1,1 +1,4 @@
 *.log
+frontend/.env
+Sanus_backend/sql
+Sanus_backend/schema_pagamentos_online.sql

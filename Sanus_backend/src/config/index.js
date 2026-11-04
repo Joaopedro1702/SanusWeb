@@ -20,6 +20,7 @@ module.exports = {
         ssl: process.env.DB_SSL === "true" ? { rejectUnauthorized: false}: undefined,
     },
     jwtSecret: process.env.JWT_SECRET,
+    mpPublicKey: process.env.MP_PUBLIC_KEY,
     // Em produção, defina CORS_ORIGINS com os endereços separados por vírgula.
     // Ex.: https://sanus.com.br,https://www.sanus.com.br
     corsOrigins: (process.env.CORS_ORIGINS || "https://sanusweb.jpk-araujo2003.workers.dev,http://127.0.0.1:5500,http://localhost:5500")

@@ -2,6 +2,8 @@
 const API_URL = ["localhost", "127.0.0.1"].includes(window.location.hostname)
     ? "http://127.0.0.1:3000/api"
     : "https://sanus-backend.onrender.com/api";
+let cardForm;
+let referenciaPixAtual;
 
 function exibirMensagem(texto, tipo = "info") {
     const titulos = {
@@ -42,6 +44,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (document.getElementById("checkoutTotal")) {
         updateCheckoutSummary();
+        iniciarCheckoutApi();
     }
 
     if (document.getElementById("paymentStatus")) {
@@ -328,36 +331,153 @@ async function processPayment() {
         return;
     }
 
-    const token = localStorage.getItem("sanus_token");
-    if (!token) {
+    if (!localStorage.getItem("sanus_token")) {
         exibirMensagem("Entre na sua conta para continuar com o pagamento.", "warning");
         openModal("authModal");
         return;
     }
 
+    const isPix = !document.getElementById("pix-section").classList.contains("hidden");
+    if (isPix) {
+        await processarPix();
+        return;
+    }
+
+    if (!cardForm) {
+        exibirMensagem("O formulário de cartão ainda está carregando.", "info");
+        return;
+    }
+    document.getElementById("form-checkout").requestSubmit();
+}
+
+function itensDoCarrinho() {
     const quantidades = new Map();
-    for (const item of cart) {
+    for (const item of getCart()) {
         const id = Number(item.id);
         if (Number.isInteger(id) && id > 0) quantidades.set(id, (quantidades.get(id) || 0) + 1);
     }
+    return [...quantidades].map(([produtoId, quantidade]) => ({ produtoId, quantidade }));
+}
 
+function totalDoCarrinho() {
+    return getCart().reduce((total, item) => total + Number(item.price || 0), 0);
+}
+
+async function iniciarCheckoutApi() {
     try {
-        const resposta = await fetch(`${API_URL}/checkout`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
+        const resposta = await fetch(`${API_URL}/pagamentos/config`);
+        const config = await resposta.json();
+        if (!resposta.ok) throw new Error(config.error || "Não foi possível carregar o pagamento.");
+        if (!window.MercadoPago) throw new Error("SDK do Mercado Pago não foi carregado.");
+
+        const mp = new MercadoPago(config.publicKey, { locale: "pt-BR" });
+        cardForm = mp.cardForm({
+            amount: totalDoCarrinho().toFixed(2),
+            iframe: true,
+            form: {
+                id: "form-checkout",
+                cardNumber: { id: "form-checkout__cardNumber", placeholder: "0000 0000 0000 0000" },
+                expirationDate: { id: "form-checkout__expirationDate", placeholder: "MM/AA" },
+                securityCode: { id: "form-checkout__securityCode", placeholder: "123" },
+                cardholderName: { id: "form-checkout__cardholderName", placeholder: "Nome do titular" },
+                issuer: { id: "form-checkout__issuer", placeholder: "Banco emissor" },
+                installments: { id: "form-checkout__installments", placeholder: "Parcelas" },
+                identificationType: { id: "form-checkout__identificationType", placeholder: "Tipo" },
+                identificationNumber: { id: "form-checkout__identificationNumber", placeholder: "CPF" },
+                cardholderEmail: { id: "form-checkout__cardholderEmail", placeholder: "seu@email.com" },
             },
-            body: JSON.stringify({
-                itens: [...quantidades].map(([produtoId, quantidade]) => ({ produtoId, quantidade })),
-            }),
+            callbacks: {
+                onFormMounted: (error) => {
+                    if (error) console.error("Erro ao montar formulário de cartão:", error);
+                },
+                onSubmit: async (event) => {
+                    event.preventDefault();
+                    await processarCartao(cardForm.getCardFormData());
+                },
+            },
         });
-        const dados = await resposta.json();
-        if (!resposta.ok) throw new Error(dados.error || "Não foi possível iniciar o pagamento.");
-        window.location.assign(dados.checkoutUrl);
     } catch (error) {
         console.error(error);
         exibirMensagem(error.message, "error");
+    }
+}
+
+async function enviarPagamento(dados) {
+    const resposta = await fetch(`${API_URL}/pagamentos`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("sanus_token")}`,
+        },
+        body: JSON.stringify({ itens: itensDoCarrinho(), ...dados }),
+    });
+    const pagamento = await resposta.json();
+    if (!resposta.ok) throw new Error(pagamento.error || "Não foi possível processar o pagamento.");
+    return pagamento;
+}
+
+async function processarCartao(dadosCartao) {
+    try {
+        const pagamento = await enviarPagamento({
+            tipo: "cartao",
+            cartao: {
+                token: dadosCartao.token,
+                payment_method_id: dadosCartao.paymentMethodId,
+                issuer_id: dadosCartao.issuerId,
+                installments: Number(dadosCartao.installments),
+            },
+        });
+        if (pagamento.status === "approved") {
+            window.location.assign(`${window.ROOT_PATH}sucesso/index.html?referencia=${encodeURIComponent(pagamento.referencia)}`);
+            return;
+        }
+        if (["rejected", "cancelled"].includes(pagamento.status)) {
+            exibirMensagem("O cartão não foi aprovado. Confira os dados e tente novamente.", "error");
+            return;
+        }
+        window.location.assign(`${window.ROOT_PATH}sucesso/index.html?referencia=${encodeURIComponent(pagamento.referencia)}`);
+    } catch (error) {
+        console.error(error);
+        exibirMensagem(error.message, "error");
+    }
+}
+
+async function processarPix() {
+    try {
+        const pagamento = await enviarPagamento({ tipo: "pix" });
+        referenciaPixAtual = pagamento.referencia;
+        const status = document.getElementById("pixStatus");
+        const qrCode = document.getElementById("pixQrCode");
+        const copiar = document.getElementById("copyPixButton");
+        if (pagamento.qrCodeBase64) {
+            qrCode.src = `data:image/png;base64,${pagamento.qrCodeBase64}`;
+            qrCode.hidden = false;
+        }
+        copiar.dataset.pixCode = pagamento.qrCode || "";
+        copiar.disabled = !pagamento.qrCode;
+        status.textContent = "Escaneie o QR Code ou copie o código PIX para concluir o pagamento.";
+        monitorarPix();
+    } catch (error) {
+        console.error(error);
+        exibirMensagem(error.message, "error");
+    }
+}
+
+async function monitorarPix() {
+    if (!referenciaPixAtual) return;
+    try {
+        const resposta = await fetch(`${API_URL}/pedidos/${encodeURIComponent(referenciaPixAtual)}`, {
+            headers: { Authorization: `Bearer ${localStorage.getItem("sanus_token")}` },
+        });
+        const pedido = await resposta.json();
+        if (pedido.status === "approved") {
+            window.location.assign(`${window.ROOT_PATH}sucesso/index.html?referencia=${encodeURIComponent(referenciaPixAtual)}`);
+            return;
+        }
+        if (["rejected", "cancelled", "refunded", "charged_back"].includes(pedido.status)) return;
+        window.setTimeout(monitorarPix, 3000);
+    } catch (error) {
+        console.error("Erro ao consultar PIX:", error);
     }
 }
 
@@ -404,7 +524,9 @@ async function verificarStatusPedido() {
 }
 
 function copyPixCode() {
-    navigator.clipboard.writeText("00020126580014BR.GOV.BCB.PIX0114SANUSPAGAMENTOS");
+    const codigo = document.getElementById("copyPixButton")?.dataset.pixCode;
+    if (!codigo) return;
+    navigator.clipboard.writeText(codigo);
     exibirMensagem("Código PIX copiado.", "success");
 }
 

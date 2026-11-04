@@ -95,7 +95,8 @@ h1, h2, h3, h4 { font-family: var(--font-heading); }
 .method-tab.active { border-color: var(--sanus-blue-main); background-color: #f0f9ff; color: var(--sanus-blue-main); }
 .form-group { margin-bottom: 15px; }
 .form-group label { display: block; font-size: 12px; font-weight: 700; color: var(--sanus-text-muted); margin-bottom: 5px; }
-.form-group input, .form-group textarea { width: 100%; padding: 12px; border: 1px solid var(--sanus-border); border-radius: var(--radius-sm); font-size: 15px; font-family: var(--font-body); }
+.form-group input, .form-group textarea, .form-group select, .mp-card-field { width: 100%; padding: 12px; border: 1px solid var(--sanus-border); border-radius: var(--radius-sm); font-size: 15px; font-family: var(--font-body); }
+.mp-card-field { min-height: 46px; background: #fff; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .pix-box { text-align: center; padding: 20px 0; }
 .qr-placeholder { margin: 0 auto 15px; }

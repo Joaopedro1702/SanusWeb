@@ -60,10 +60,34 @@
         <section class="page-view active container section-padding">
             <div class="checkout-card">
                 <h2 class="checkout-title">RESUMO E PAGAMENTO</h2>
+                <div class="payment-methods">
+                    <label class="method-tab active" id="tab-card" onclick="selectPaymentMethod('card')"><input type="radio" name="paymentMethod" value="card" checked><span>Cartão de Crédito</span></label>
+                    <label class="method-tab" id="tab-pix" onclick="selectPaymentMethod('pix')"><input type="radio" name="paymentMethod" value="pix"><span>PIX</span></label>
+                </div>
                 <div id="form-card-section" class="payment-form-section">
-                    <div class="alert-box info">
-                        <strong>PAGAMENTO SEGURO</strong>
-                        <p>Você será direcionado ao Mercado Pago para escolher PIX ou cartão e concluir o pagamento.</p>
+                    <form id="form-checkout">
+                        <div class="form-group"><label>NÚMERO DO CARTÃO</label><div id="form-checkout__cardNumber" class="mp-card-field"></div></div>
+                        <div class="form-row">
+                            <div class="form-group"><label>VALIDADE</label><div id="form-checkout__expirationDate" class="mp-card-field"></div></div>
+                            <div class="form-group"><label>CVV</label><div id="form-checkout__securityCode" class="mp-card-field"></div></div>
+                        </div>
+                        <div class="form-group"><label>NOME IMPRESSO NO CARTÃO</label><input id="form-checkout__cardholderName" type="text" autocomplete="cc-name"></div>
+                        <div class="form-row">
+                            <div class="form-group"><label>BANCO EMISSOR</label><select id="form-checkout__issuer"></select></div>
+                            <div class="form-group"><label>PARCELAS</label><select id="form-checkout__installments"></select></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label>DOCUMENTO</label><select id="form-checkout__identificationType"></select></div>
+                            <div class="form-group"><label>NÚMERO DO DOCUMENTO</label><input id="form-checkout__identificationNumber" type="text"></div>
+                        </div>
+                        <div class="form-group"><label>E-MAIL</label><input id="form-checkout__cardholderEmail" type="email" autocomplete="email"></div>
+                    </form>
+                </div>
+                <div id="pix-section" class="payment-form-section hidden">
+                    <div class="pix-box">
+                        <div class="qr-placeholder"><img id="pixQrCode" alt="QR Code PIX" hidden style="max-width: 220px;"></div>
+                        <p id="pixStatus">Ao concluir, o QR Code e o código PIX serão gerados aqui.</p>
+                        <button id="copyPixButton" class="btn btn-outline" type="button" onclick="copyPixCode()" disabled>COPIAR CÓDIGO PIX</button>
                     </div>
                 </div>
                 <div class="checkout-summary-box">
@@ -71,7 +95,7 @@
                 </div>
                 <div class="checkout-actions">
                     <a href="../carrinho/index.html" class="btn btn-outline" style="text-decoration:none;">CANCELAR</a>
-                    <button class="btn btn-primary" onclick="processPayment()">CONCLUIR PAGAMENTO</button>
+                    <button id="payButton" class="btn btn-primary" type="button" onclick="processPayment()">CONCLUIR PAGAMENTO</button>
                 </div>
             </div>
         </section>
@@ -166,6 +190,7 @@
     </footer>
     <script>window.ROOT_PATH = "../";</script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://sdk.mercadopago.com/js/v2"></script>
     <script src="../src/scripts/data.js"></script>
     <script src="../src/scripts/main.js"></script>
 </body>

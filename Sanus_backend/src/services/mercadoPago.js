@@ -1,6 +1,5 @@
 const {
     MercadoPagoConfig,
-    Preference,
     Payment,
     WebhookSignatureValidator,
 } = require("mercadopago");
@@ -15,7 +14,6 @@ function criarClientesMercadoPago() {
 
     const client = new MercadoPagoConfig({ accessToken });
     return {
-        preference: new Preference(client),
         payment: new Payment(client),
     };
 }

@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcryptjs");
 const jwt = require('jsonwebtoken');
-const { jwtSecret} = require('../config');
+const { jwtSecret, mpPublicKey, publicBaseUrl } = require('../config');
 const criarCtl = require("../controllers/criarController.js");
 const consultar = require("../controllers/consultarController.js");
 const atualizarCtl = require ("../controllers/atualizarController.js");
@@ -37,6 +37,13 @@ router.post("/login", async (req, res) => {
 
 
 router.post("/usuarios",validarCpf , criarCtl(usuario.criarUsuario));
+
+router.get("/pagamentos/config", (req, res) => {
+  if (!mpPublicKey) {
+    return res.status(503).json({ error: "Chave pública do Mercado Pago não configurada." });
+  }
+  return res.json({ publicKey: mpPublicKey });
+});
 
 router.post("/pagamentos/webhook", async (req,res) => {
   try{
@@ -141,92 +148,143 @@ router.get("/vendas/:id", consultar(venda.buscarVendaPorId));
 const pagamentoVenda = require("../repositories/pagamentoVendaRepository");
 router.get("/pagamentos-venda/:id", consultar(pagamentoVenda.buscarPagamentoVendaPorId));
 
-router.post("/checkout", async (req,res) => {
-  let referencia;
+async function criarPedidoOnline(idUsuario, itensSolicitados) {
+  if (!Array.isArray(itensSolicitados) || itensSolicitados.length === 0 || itensSolicitados.length > 100) {
+    const error = new Error("Carrinho vazio ou inválido.");
+    error.status = 400;
+    throw error;
+  }
+
+  const [[cliente]] = await db.query(
+    `SELECT c.id, u.email, u.cpf
+     FROM Tbl_Cliente c
+     JOIN Tbl_Usuario u ON u.id = c.id_Usuario
+     WHERE c.id_Usuario = ? LIMIT 1`,
+    [idUsuario],
+  );
+  if (!cliente) {
+    const error = new Error("Sua conta não está vinculada a um cliente.");
+    error.status = 403;
+    throw error;
+  }
+
+  const itensAgrupados = new Map();
+  for (const item of itensSolicitados) {
+    const produtoId = Number(item?.produtoId);
+    const quantidade = Number(item?.quantidade);
+    if (!Number.isSafeInteger(produtoId) || produtoId <= 0 || !Number.isSafeInteger(quantidade) || quantidade <= 0) {
+      const error = new Error("Produto ou quantidade inválidos.");
+      error.status = 400;
+      throw error;
+    }
+    itensAgrupados.set(produtoId, (itensAgrupados.get(produtoId) || 0) + quantidade);
+  }
+
+  const ids = [...itensAgrupados.keys()];
+  const placeholders = ids.map(() => "?").join(",");
+  const [produtos] = await db.query(
+    `SELECT id, nome, preco FROM Tbl_Produto WHERE id IN (${placeholders})`,
+    ids,
+  );
+  if (produtos.length !== ids.length) {
+    const error = new Error("Um ou mais produtos não foram encontrados.");
+    error.status = 400;
+    throw error;
+  }
+
+  const produtosPorId = new Map(produtos.map((produto) => [Number(produto.id), produto]));
+  const itens = ids.map((produtoId) => {
+    const produto = produtosPorId.get(produtoId);
+    return {
+      id: String(produto.id),
+      title: produto.nome,
+      quantity: itensAgrupados.get(produtoId),
+      unit_price: Number(produto.preco),
+      currency_id: "BRL",
+    };
+  });
+  const valor = Math.round(itens.reduce((total, item) => total + item.quantity * item.unit_price, 0) * 100) / 100;
+  const referencia = crypto.randomUUID();
+
+  await db.query(
+    `INSERT INTO Tbl_Pedido_Online (referencia, id_Cliente, itens, valor, status)
+     VALUES (?, ?, ?, ?, 'pending')`,
+    [referencia, cliente.id, JSON.stringify(itens), valor],
+  );
+
+  return { cliente, itens, valor, referencia };
+}
+
+router.post("/pagamentos", async (req, res) => {
+  let pedido;
   try {
-    const itensSolicitados = req.body?.itens;
-
-    if (!Array.isArray(itensSolicitados) || itensSolicitados.length === 0 || itensSolicitados.length > 100){
-      return res.status(400).json({ error: "Carrinho vazio ou inválido." });
+    const tipo = req.body?.tipo;
+    if (!["pix", "cartao"].includes(tipo)) {
+      return res.status(400).json({ error: "Forma de pagamento inválida." });
     }
 
-    const idClienteRows = await db.query(
-      "SELECT id FROM Tbl_Cliente WHERE id_Usuario = ? LIMIT 1",
-      [req.usuario.id],
-    );
-    const cliente = idClienteRows[0][0];
-    if (!cliente) return res.status(403).json({ error: "Sua conta não está vinculada a um cliente." });
-
-    const itensAgrupados = new Map();
-    for (const item of itensSolicitados) {
-      const produtoId = Number(item?.produtoId);
-      const quantidade = Number(item?.quantidade);
-      if (!Number.isSafeInteger(produtoId) || produtoId <= 0 || !Number.isSafeInteger(quantidade) || quantidade <= 0) {
-        return res.status(400).json({ error: "Produto ou quantidade inválidos." });
+    const dadosCartao = req.body?.cartao || {};
+    if (tipo === "cartao") {
+      const installments = Number(dadosCartao.installments);
+      if (!dadosCartao.token || !dadosCartao.payment_method_id || !Number.isSafeInteger(installments) || installments < 1) {
+        return res.status(400).json({ error: "Dados do cartão inválidos." });
       }
-      itensAgrupados.set(produtoId, (itensAgrupados.get(produtoId) || 0) + quantidade);
     }
 
-    const ids = [...itensAgrupados.keys()];
-    const placeholders = ids.map(() => "?").join(",");
-    const [produtos] = await db.query(
-      `SELECT id, nome, preco FROM Tbl_Produto WHERE id IN (${placeholders})`,
-      ids,
-    );
-
-    if (produtos.length !== ids.length) return res.status(400).json({ error: "Um ou mais produtos não foram encontrados." });
-    const produtosPorId = new Map(produtos.map((produto) => [Number(produto.id), produto]));
-
-    const itens = ids.map((produtoId) => {
-      const produto = produtosPorId.get(produtoId);
-      return {
-        id: String(produto.id),
-        title: produto.nome,
-        quantity: itensAgrupados.get(produtoId),
-        unit_price: Number(produto.preco),
-        currency_id: "BRL",
-      };
-    });
-
-    const valor = Math.round(itens.reduce((total, item) => total + item.quantity * item.unit_price, 0) * 100) / 100;
-    const { preference } = criarClientesMercadoPago();
-    referencia = crypto.randomUUID();
-    await db.query(
-      `INSERT INTO Tbl_Pedido_Online (referencia, id_Cliente, itens, valor, status)
-       VALUES (?, ?, ?, ?, 'pending')`,
-      [referencia, cliente.id, JSON.stringify(itens), valor],
-    );
-
-    const { publicBaseUrl, frontendUrl } = require("../config");
-    const baseUrl = publicBaseUrl.replace(/\/$/, "");
-    const urlFrontend = frontendUrl.replace(/\/$/, "");
-    const checkout = await preference.create({
-      body: {
-        items: itens,
-        external_reference: referencia,
-        notification_url: `${baseUrl}/api/pagamentos/webhook`,
-        back_urls: {
-          success: `${urlFrontend}/sucesso/index.html?referencia=${referencia}`,
-          failure: `${urlFrontend}/falha/index.html?referencia=${referencia}`,
-          pending: `${urlFrontend}/checkout/index.html?referencia=${referencia}`,
-        },
-        auto_return: "approved",
+    pedido = await criarPedidoOnline(req.usuario.id, req.body?.itens);
+    const { payment } = criarClientesMercadoPago();
+    const corpo = {
+      transaction_amount: pedido.valor,
+      description: `Pedido SANUS ${pedido.referencia}`,
+      external_reference: pedido.referencia,
+      notification_url: `${publicBaseUrl.replace(/\/$/, "")}/api/pagamentos/webhook`,
+      payer: {
+        email: pedido.cliente.email,
+        identification: { type: "CPF", number: pedido.cliente.cpf },
       },
-    });
-    await db.query(
-      "UPDATE Tbl_Pedido_Online SET mp_preference_id = ? WHERE referencia = ?",
-      [String(checkout.id), referencia],
-    );
-    return res.status(201).json({ referencia, checkoutUrl: checkout.init_point, valor });
-  }catch(error){
-    console.error("Erro ao criar checkout:", error);
-    if (referencia) {
-      await db.query(
-        "UPDATE Tbl_Pedido_Online SET status = 'checkout_error' WHERE referencia = ? AND status = 'pending'",
-        [referencia],
-      ).catch((dbError) => console.error("Erro ao atualizar pedido sem checkout:", dbError));
+    };
+
+    if (tipo === "pix") {
+      corpo.payment_method_id = "pix";
+    } else {
+      const installments = Number(dadosCartao.installments);
+      corpo.token = dadosCartao.token;
+      corpo.payment_method_id = dadosCartao.payment_method_id;
+      corpo.installments = installments;
+      const issuerId = Number(dadosCartao.issuer_id);
+      if (Number.isSafeInteger(issuerId) && issuerId > 0) corpo.issuer_id = issuerId;
     }
-    return res.status(error.status || 500).json({ error: error.status === 503 ? error.message : "Não foi possível iniciar o pagamento." });
+
+    const pagamento = await payment.create({
+      body: corpo,
+      requestOptions: { idempotencyKey: pedido.referencia },
+    });
+
+    await db.query(
+      `UPDATE Tbl_Pedido_Online
+       SET status = ?, mp_payment_id = ?, forma_pagamento = ?
+       WHERE referencia = ?`,
+      [pagamento.status || "pending", String(pagamento.id), pagamento.payment_method_id || tipo, pedido.referencia],
+    );
+
+    const transactionData = pagamento.point_of_interaction?.transaction_data || {};
+    return res.status(201).json({
+      referencia: pedido.referencia,
+      status: pagamento.status,
+      statusDetail: pagamento.status_detail,
+      qrCode: transactionData.qr_code || null,
+      qrCodeBase64: transactionData.qr_code_base64 || null,
+      ticketUrl: transactionData.ticket_url || null,
+    });
+  } catch (error) {
+    console.error("Erro ao processar pagamento:", error);
+    if (pedido?.referencia) {
+      await db.query(
+        "UPDATE Tbl_Pedido_Online SET status = 'payment_error' WHERE referencia = ? AND status = 'pending'",
+        [pedido.referencia],
+      ).catch((dbError) => console.error("Erro ao atualizar pedido com falha:", dbError));
+    }
+    return res.status(error.status || 500).json({ error: error.status === 503 ? error.message : "Não foi possível processar o pagamento." });
   }
 });
 

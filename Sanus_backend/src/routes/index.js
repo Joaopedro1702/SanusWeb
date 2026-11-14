@@ -307,7 +307,11 @@ router.post("/pagamentos", async (req, res) => {
         [pedido.referencia],
       ).catch((dbError) => console.error("Erro ao atualizar pedido com falha:", dbError));
     }
-    return res.status(error.status || 500).json({ error: error.status === 503 ? error.message : "Não foi possível processar o pagamento." });
+    const status = error.status || 500;
+    const mensagem = [400, 403, 503].includes(status)
+      ? error.message
+      : "Não foi possível processar o pagamento.";
+    return res.status(status).json({ error: mensagem });
   }
 });
 

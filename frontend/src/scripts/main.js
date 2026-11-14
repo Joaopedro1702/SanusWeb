@@ -155,6 +155,11 @@ function configurarCadastro() {
         grupoDataNascimento.className = "form-group";
         grupoDataNascimento.innerHTML = '<label>DATA DE NASCIMENTO</label><input id="cadastroDataNascimento" type="date" required>';
         grupoCpf.insertAdjacentElement("afterend", grupoDataNascimento);
+
+        const grupoTelefone = document.createElement("div");
+        grupoTelefone.className = "form-group";
+        grupoTelefone.innerHTML = '<label>TELEFONE</label><input id="cadastroTelefone" type="text" inputmode="tel" pattern="\\([0-9]{2}\\)[0-9]{5}-[0-9]{4}" maxlength="14" placeholder="(00)00000-0000" required>';
+        grupoDataNascimento.insertAdjacentElement("afterend", grupoTelefone);
     }
 
     const campoCpf = formulario.querySelector("#cadastroCpf");
@@ -170,11 +175,21 @@ function configurarCadastro() {
         campoCpf.value = cpf;
     });
 
+    const campoTelefone = formulario.querySelector("#cadastroTelefone");
+    campoTelefone.addEventListener("input", () => {
+        const telefone = campoTelefone.value.replace(/\D/g, "").slice(0, 11);
+        campoTelefone.value = telefone
+            .replace(/^(\d{2})(\d)/, "($1)$2")
+            .replace(/(\d{5})(\d)/, "$1-$2");
+    });
+
     formulario.addEventListener("submit", async (event) => {
         event.preventDefault();
         event.stopImmediatePropagation();
 
-        const [campoNome, campoEmailCadastro, campoSenha] = formulario.querySelectorAll("input:not(#cadastroCpf):not(#cadastroDataNascimento)");
+        const campoNome = formulario.querySelector('.form-group input[type="text"]');
+        const campoEmailCadastro = formulario.querySelector('input[type="email"]');
+        const campoSenha = formulario.querySelector('input[type="password"]');
         const campoDataNascimento = formulario.querySelector("#cadastroDataNascimento");
 
         try {
@@ -183,7 +198,8 @@ function configurarCadastro() {
                 campoCpf.value.replace(/\D/g, ""),
                 campoEmailCadastro.value,
                 campoSenha.value,
-                campoDataNascimento.value
+                campoDataNascimento.value,
+                campoTelefone.value
             );
 
             document.querySelector('#auth-login input[type="email"]').value = campoEmailCadastro.value;
@@ -195,13 +211,13 @@ function configurarCadastro() {
     }, true);
 }
 
-async function criarUsuario(nome, cpf, email, senha, data_Nasc) {
+async function criarUsuario(nome, cpf, email, senha, data_Nasc, telefone) {
     const resposta = await fetch(`${API_URL}/usuarios`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
         },
-        body: JSON.stringify({ nome, cpf, email, senha, data_Nasc })
+        body: JSON.stringify({ nome, cpf, email, senha, data_Nasc, telefone })
     });
 
     const dados = await resposta.json();
@@ -400,135 +416,7 @@ async function iniciarCheckoutApi() {
         console.error(error);
         exibirMensagem(error.message, "error");
     }
-}
-
-async function enviarPagamento(dados) {
-    const resposta = await fetch(`${API_URL}/pagamentos`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("sanus_token")}`,
-        },
-        body: JSON.stringify({ itens: itensDoCarrinho(), ...dados }),
-    });
-    const pagamento = await resposta.json();
-    if (!resposta.ok) throw new Error(pagamento.error || "Não foi possível processar o pagamento.");
-    return pagamento;
-}
-
-async function processarCartao(dadosCartao) {
-    try {
-        const pagamento = await enviarPagamento({
-            tipo: "cartao",
-            cartao: {
-                token: dadosCartao.token,
-                payment_method_id: dadosCartao.paymentMethodId,
-                issuer_id: dadosCartao.issuerId,
-                installments: Number(dadosCartao.installments),
-            },
-        });
-        if (pagamento.status === "approved") {
-            window.location.assign(`${window.ROOT_PATH}sucesso/index.html?referencia=${encodeURIComponent(pagamento.referencia)}`);
-            return;
-        }
-        if (["rejected", "cancelled"].includes(pagamento.status)) {
-            exibirMensagem("O cartão não foi aprovado. Confira os dados e tente novamente.", "error");
-            return;
-        }
-        window.location.assign(`${window.ROOT_PATH}sucesso/index.html?referencia=${encodeURIComponent(pagamento.referencia)}`);
-    } catch (error) {
-        console.error(error);
-        exibirMensagem(error.message, "error");
-    }
-}
-
-async function processarPix() {
-    try {
-        const pagamento = await enviarPagamento({ tipo: "pix" });
-        referenciaPixAtual = pagamento.referencia;
-        const status = document.getElementById("pixStatus");
-        const qrCode = document.getElementById("pixQrCode");
-        const copiar = document.getElementById("copyPixButton");
-        if (pagamento.qrCodeBase64) {
-            qrCode.src = `data:image/png;base64,${pagamento.qrCodeBase64}`;
-            qrCode.hidden = false;
-        }
-        copiar.dataset.pixCode = pagamento.qrCode || "";
-        copiar.disabled = !pagamento.qrCode;
-        status.textContent = "Escaneie o QR Code ou copie o código PIX para concluir o pagamento.";
-        monitorarPix();
-    } catch (error) {
-        console.error(error);
-        exibirMensagem(error.message, "error");
-    }
-}
-
-async function monitorarPix() {
-    if (!referenciaPixAtual) return;
-    try {
-        const resposta = await fetch(`${API_URL}/pedidos/${encodeURIComponent(referenciaPixAtual)}`, {
-            headers: { Authorization: `Bearer ${localStorage.getItem("sanus_token")}` },
-        });
-        const pedido = await resposta.json();
-        if (pedido.status === "approved") {
-            window.location.assign(`${window.ROOT_PATH}sucesso/index.html?referencia=${encodeURIComponent(referenciaPixAtual)}`);
-            return;
-        }
-        if (["rejected", "cancelled", "refunded", "charged_back"].includes(pedido.status)) return;
-        window.setTimeout(monitorarPix, 3000);
-    } catch (error) {
-        console.error("Erro ao consultar PIX:", error);
-    }
-}
-
-async function verificarStatusPedido() {
-    const referencia = new URLSearchParams(window.location.search).get("referencia");
-    const statusElement = document.getElementById("paymentStatus");
-    const orderElement = document.getElementById("orderId");
-    if (!referencia || !statusElement) {
-        statusElement.textContent = "Não foi possível localizar a referência deste pagamento.";
-        return;
-    }
-
-    if (orderElement) orderElement.textContent = referencia;
-    const token = localStorage.getItem("sanus_token");
-    if (!token) {
-        statusElement.textContent = "Entre na sua conta para consultar o status do pedido.";
-        return;
-    }
-
-    for (let tentativa = 0; tentativa < 10; tentativa += 1) {
-        try {
-            const resposta = await fetch(`${API_URL}/pedidos/${encodeURIComponent(referencia)}`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            const pedido = await resposta.json();
-            if (!resposta.ok) throw new Error(pedido.error || "Falha ao consultar o pedido.");
-
-            if (pedido.status === "approved") {
-                statusElement.textContent = "Pagamento aprovado pelo Mercado Pago.";
-                saveCart([]);
-                return;
-            }
-            if (["rejected", "cancelled", "refunded", "charged_back"].includes(pedido.status)) {
-                statusElement.textContent = "O pagamento não foi aprovado. Você pode tentar novamente pelo carrinho.";
-                return;
-            }
-            statusElement.textContent = "Pagamento recebido; aguardando confirmação do Mercado Pago…";
-        } catch (error) {
-            statusElement.textContent = error.message;
-            return;
-        }
-        await new Promise((resolve) => window.setTimeout(resolve, 2000));
-    }
-}
-
-function copyPixCode() {
-    const codigo = document.getElementById("copyPixButton")?.dataset.pixCode;
-    if (!codigo) return;
-    navigator.clipboard.writeText(codigo);
-    exibirMensagem("Código PIX copiado.", "success");
-}
+};
 
 function openModal(id) { const m = document.getElementById(id); if(m) m.classList.add("active"); }
 function closeModal(id) { const m = document.getElementById(id); if(m) m.classList.remove("active"); }

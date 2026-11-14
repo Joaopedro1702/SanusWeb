@@ -12,6 +12,7 @@ const usuarioRepo = require("../repositories/usuarioRepository.js");
 const { autenticar } = require("../middleware/auth.js");
 const usuario = require("../repositories/usuarioRepository");
 const validarCpf = require("../middleware/validaCpf.js");
+const validarTelefone = require("../middleware/validaTelefone.js");
 const db = require("../connection/db.js");
 const crypto = require("crypto");
 const {
@@ -36,7 +37,7 @@ router.post("/login", async (req, res) => {
 });
 
 
-router.post("/usuarios",validarCpf , criarCtl(usuario.criarUsuario));
+router.post("/usuarios", validarCpf, validarTelefone, criarCtl(usuario.criarUsuario));
 
 router.get("/pagamentos/config", (req, res) => {
   if (!mpPublicKey) {
@@ -71,20 +72,20 @@ router.post("/pagamentos/webhook", async (req,res) => {
       const referencia = pagamento.external_reference;
       if (!referencia) return res.sendStatus(200);
 
-      const [pedidos] = await db.query(
-        "SELECT id, valor, mp_payment_id FROM Tbl_Pedido_Online WHERE referencia = ? LIMIT 1",
+      const [vendas] = await db.query(
+        "SELECT id, valor, mp_payment_id FROM Tbl_Venda WHERE referencia = ? LIMIT 1",
         [referencia],
       );
-      const pedido = pedidos[0];
-      // Eventos de pagamentos que não pertencem a um pedido Sanus são ignorados.
-      if (!pedido) return res.sendStatus(200);
+      const venda = vendas[0];
+      // Eventos de pagamentos que não pertencem a uma venda Sanus são ignorados.
+      if (!venda) return res.sendStatus(200);
 
       const valorPago = Number(pagamento.transaction_amount);
       if (
         String(pagamento.currency_id) !== "BRL" ||
-        Math.round(valorPago * 100) !== Math.round(Number(pedido.valor) * 100)
+        Math.round(valorPago * 100) !== Math.round(Number(venda.valor) * 100)
       ) {
-        console.error("Pagamento Mercado Pago diverge do pedido", referencia);
+        console.error("Pagamento Mercado Pago diverge da venda", referencia);
         return res.sendStatus(200);
       }
 
@@ -93,10 +94,10 @@ router.post("/pagamentos/webhook", async (req,res) => {
       ]);
       const status = estadosPermitidos.has(pagamento.status) ? pagamento.status : "pending";
       await db.query(
-        `UPDATE Tbl_Pedido_Online
-         SET status = ?, mp_payment_id = ?, forma_pagamento = ?, atualizado_em = CURRENT_TIMESTAMP
+        `UPDATE Tbl_Venda
+         SET status_pagamento = ?, mp_payment_id = ?
          WHERE referencia = ? AND (mp_payment_id IS NULL OR mp_payment_id = ?)`,
-        [status, String(pagamento.id), pagamento.payment_method_id || null, referencia, String(pagamento.id)],
+        [status, String(pagamento.id), referencia, String(pagamento.id)],
       );
       return res.sendStatus(200);
   }catch(error){
@@ -148,7 +149,7 @@ router.get("/vendas/:id", consultar(venda.buscarVendaPorId));
 const pagamentoVenda = require("../repositories/pagamentoVendaRepository");
 router.get("/pagamentos-venda/:id", consultar(pagamentoVenda.buscarPagamentoVendaPorId));
 
-async function criarPedidoOnline(idUsuario, itensSolicitados) {
+async function criarVendaOnline(idUsuario, itensSolicitados) {
   if (!Array.isArray(itensSolicitados) || itensSolicitados.length === 0 || itensSolicitados.length > 100) {
     const error = new Error("Carrinho vazio ou inválido.");
     error.status = 400;
@@ -196,23 +197,40 @@ async function criarPedidoOnline(idUsuario, itensSolicitados) {
   const itens = ids.map((produtoId) => {
     const produto = produtosPorId.get(produtoId);
     return {
-      id: String(produto.id),
-      title: produto.nome,
-      quantity: itensAgrupados.get(produtoId),
-      unit_price: Number(produto.preco),
-      currency_id: "BRL",
+      id_Produto: Number(produto.id),
+      qnt: itensAgrupados.get(produtoId),
+      valor_Unitario: Number(produto.preco),
     };
   });
-  const valor = Math.round(itens.reduce((total, item) => total + item.quantity * item.unit_price, 0) * 100) / 100;
+  const valor = Math.round(itens.reduce((total, item) => total + item.qnt * item.valor_Unitario, 0) * 100) / 100;
   const referencia = crypto.randomUUID();
+  const conexao = await db.getConnection();
 
-  await db.query(
-    `INSERT INTO Tbl_Pedido_Online (referencia, id_Cliente, itens, valor, status)
-     VALUES (?, ?, ?, ?, 'pending')`,
-    [referencia, cliente.id, JSON.stringify(itens), valor],
-  );
+  try {
+    await conexao.beginTransaction();
+    // Vendas online não possuem funcionário ou NFe antes da confirmação do pagamento.
+    const [resultadoVenda] = await conexao.query(
+      `INSERT INTO Tbl_Venda
+       (id_Cliente, id_Funcionario, nfe, valor, data_Venda, canal_Venda, status_pagamento, referencia)
+       VALUES (?, NULL, NULL, ?, NOW(), 'Site', 'pending', ?)`,
+      [cliente.id, valor, referencia],
+    );
 
-  return { cliente, itens, valor, referencia };
+    for (const item of itens) {
+      await conexao.query(
+        `INSERT INTO Tbl_Produto_Venda (id_Venda, id_Produto, qnt, valor_Unitario)
+         VALUES (?, ?, ?, ?)`,
+        [resultadoVenda.insertId, item.id_Produto, item.qnt, item.valor_Unitario],
+      );
+    }
+    await conexao.commit();
+    return { cliente, itens, valor, referencia, vendaId: resultadoVenda.insertId };
+  } catch (error) {
+    await conexao.rollback();
+    throw error;
+  } finally {
+    conexao.release();
+  }
 }
 
 router.post("/pagamentos", async (req, res) => {
@@ -231,7 +249,7 @@ router.post("/pagamentos", async (req, res) => {
       }
     }
 
-    pedido = await criarPedidoOnline(req.usuario.id, req.body?.itens);
+    pedido = await criarVendaOnline(req.usuario.id, req.body?.itens);
     const { payment } = criarClientesMercadoPago();
     const corpo = {
       transaction_amount: pedido.valor,
@@ -261,10 +279,10 @@ router.post("/pagamentos", async (req, res) => {
     });
 
     await db.query(
-      `UPDATE Tbl_Pedido_Online
-       SET status = ?, mp_payment_id = ?, forma_pagamento = ?
+      `UPDATE Tbl_Venda
+       SET status_pagamento = ?, mp_payment_id = ?
        WHERE referencia = ?`,
-      [pagamento.status || "pending", String(pagamento.id), pagamento.payment_method_id || tipo, pedido.referencia],
+      [pagamento.status || "pending", String(pagamento.id), pedido.referencia],
     );
 
     const transactionData = pagamento.point_of_interaction?.transaction_data || {};
@@ -280,7 +298,7 @@ router.post("/pagamentos", async (req, res) => {
     console.error("Erro ao processar pagamento:", error);
     if (pedido?.referencia) {
       await db.query(
-        "UPDATE Tbl_Pedido_Online SET status = 'payment_error' WHERE referencia = ? AND status = 'pending'",
+        "UPDATE Tbl_Venda SET status_pagamento = 'payment_error' WHERE referencia = ? AND status_pagamento = 'pending'",
         [pedido.referencia],
       ).catch((dbError) => console.error("Erro ao atualizar pedido com falha:", dbError));
     }
@@ -290,15 +308,15 @@ router.post("/pagamentos", async (req, res) => {
 
 router.get("/pedidos/:referencia", async (req, res) => {
   try {
-    const [pedidos] = await db.query(
-      `SELECT referencia, valor, status, forma_pagamento, criado_em, atualizado_em
-       FROM Tbl_Pedido_Online po
-       JOIN Tbl_Cliente c ON c.id = po.id_Cliente
-       WHERE po.referencia = ? AND c.id_Usuario = ? LIMIT 1`,
+    const [vendas] = await db.query(
+      `SELECT v.referencia, v.valor, v.status_pagamento AS status, v.data_Venda AS criado_em
+       FROM Tbl_Venda v
+       JOIN Tbl_Cliente c ON c.id = v.id_Cliente
+       WHERE v.referencia = ? AND c.id_Usuario = ? LIMIT 1`,
       [req.params.referencia, req.usuario.id],
     );
-    if (!pedidos[0]) return res.status(404).json({ error: "Pedido não encontrado." });
-    return res.json(pedidos[0]);
+    if (!vendas[0]) return res.status(404).json({ error: "Pedido não encontrado." });
+    return res.json(vendas[0]);
   } catch (error) {
     console.error("Erro ao consultar pedido:", error);
     return res.status(500).json({ error: "Não foi possível consultar o pedido." });

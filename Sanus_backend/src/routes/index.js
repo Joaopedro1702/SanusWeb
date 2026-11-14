@@ -37,7 +37,12 @@ router.post("/login", async (req, res) => {
 });
 
 
-router.post("/usuarios", validarCpf, validarTelefone, criarCtl(usuario.criarUsuario));
+// O cadastro feito pelo site precisa criar também o registro de cliente,
+// pois apenas clientes podem finalizar compras online.
+router.post("/usuarios", validarCpf, validarTelefone, (req, res, next) => {
+  req.body.aceitaOfertas = Boolean(req.body.aceitaOfertas);
+  return criarCtl(cliente.criarCliente)(req, res, next);
+});
 
 router.get("/pagamentos/config", (req, res) => {
   if (!mpPublicKey) {

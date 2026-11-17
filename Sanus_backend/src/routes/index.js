@@ -61,12 +61,40 @@ crud("clientes", {
 });
 
 const produto = require("../repositories/produtoRepository");
+const venda = require("../repositories/vendaRepository");
 crud("produtos", {
   criar: produto.cadastroProduto,
   buscar: produto.listaProdutosPorId,
   listar: produto.listarProdutos,
   atualizar: produto.atualizarProduto,
   deletar: produto.deletarProduto,
+});
+
+const estoque = require("../repositories/estoqueRepository");
+crud("estoque", {
+  criar: estoque.criarEstoque,
+  buscar: estoque.buscarEstoquePorId,
+  listar: estoque.listarEstoque,
+  atualizar: estoque.atualizarEstoque,
+  deletar: estoque.deletarEstoque,
+});
+router.post("/estoque/repor", criarCtl(estoque.reporEstoque));
+
+//Routes para vendas
+crud("vendas", {
+  criar: venda.criarVenda,
+  buscar: venda.buscarVendaPorId,
+  listar: venda.listarVendas,
+  atualizar: venda.atualizarVenda,
+  deletar: venda.deletarVenda,
+});
+
+//Routes para perfil
+
+router.get("/perfil", async (req, res) => {
+  const perfil = await usuarioRepositry.buscarPerfilUsuario({id: req.usuario.id});
+  if(!perfil) return res.status(404).json({error: "Usuário não encontrado"});
+  res.json(perfil);
 });
 
 //Routes para o dashboard

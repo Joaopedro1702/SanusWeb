@@ -20,9 +20,14 @@ async function criarEstoque({id_Lote, posicao}){
 //RESUMINDO: O array vai como um único texto, e o banco o "desmonta" lá dentro.
 async function reporEstoque({id_Fornecedor, total_Compra, itens}){
     const [result] = await db.query(
-        "CALL sp_ReporEstoque(?, ?, ?)"
+        "CALL sp_ReporEstoque(?, ?, ?)",
         [id_Fornecedor, total_Compra, JSON.stringify(itens)]
     );
+    return result;
+}
+
+async function listarEstoque(){
+    const [result] = await db.query("SELECT * FROM Tbl_Estoque");
     return result;
 }
 
@@ -59,6 +64,7 @@ async function deletarEstoque({id}){
 module.exports = {
     criarEstoque,
     reporEstoque,
+    listarEstoque,
     buscarEstoquePorId,
     atualizarEstoque,
     deletarEstoque

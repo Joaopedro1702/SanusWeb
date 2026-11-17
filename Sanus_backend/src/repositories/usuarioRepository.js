@@ -59,11 +59,23 @@ async function deletarUsuario({id}){
     return result;
 }
 
+//Usuario perfil
+
+async function buscarPerfilUsuario({id}){
+    const [result] = await db.query(
+        `SELECT nome, email, cpf, data_Nasc FROM Tbl_Usuario WHERE id = ?`
+        [id]
+    );
+    return result[0];
+
+}
+
 //Utilizando todas as funções
 module.exports = {
     criarUsuario,
     buscarUsuarioPorId,
     buscarUsuarioPorEmail,
     atualizarUsuario,
-    deletarUsuario
+    deletarUsuario,
+    buscarPerfilUsuario
 };

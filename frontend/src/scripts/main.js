@@ -307,3 +307,9 @@ function switchAuthTab(tabName) {
     document.querySelectorAll(".auth-subview").forEach(t => t.classList.remove("active"));
     const t = document.getElementById(`auth-${tabName}`); if(t) t.classList.add("active");
 }
+
+async function dadosPerfil(){
+    const resposta = await fetch(`${API_URL}/perfil`, {
+        headers: {Authorization: `Bearer ${localStorage.getItem("sanus_token")}`},
+    });
+}

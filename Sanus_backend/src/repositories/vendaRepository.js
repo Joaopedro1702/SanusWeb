@@ -5,14 +5,14 @@ async function criarVenda({id_Cliente, id_Funcionario, nfe, canal_Venda, forma_P
     valor_Recebido, situacao, itens
 }){
     const [result] = await db.query(
-        "CALL sp_RealizarVenda(?, ?, ?, ?, ? ,?, ?, ?, ?)"
+        "CALL sp_RealizarVenda(?, ?, ?, ?, ? ,?, ?, ?, ?)",
         [id_Cliente, id_Funcionario, nfe, canal_Venda, forma_Pagamento, valor_Pago, valor_Recebido, situacao, JSON.stringify(itens)]
     );
     return result;
 }
 
 //Busca todas as vendas sem fitro
-async function buscarVenda(){
+async function listarVendas(){
     const [result] = await db.query(
         "CALL sp_ViewVendas"
     );
@@ -20,10 +20,10 @@ async function buscarVenda(){
 }
 
 //Criando função de buscar venda por id
-async function buscarVendaPorId({id_venda}){
+async function buscarVendaPorId({id}){
     const [result] = await db.query(
-        "CALL sp_ViewVendas",
-        [id_venda]
+        "CALL sp_ViewVendas(?)",
+        [id]
     );
     return result;
 }
@@ -80,8 +80,11 @@ async function faturamentoPorFormaPagamento() {
 module.exports = {
     criarVenda,
     buscarVendaPorId,
+    listarVendas,
     atualizarVenda,
     deletarVenda,
     faturamentoPorTarjaEMes,
     faturamentoPorFormaPagamento
 };
+
+

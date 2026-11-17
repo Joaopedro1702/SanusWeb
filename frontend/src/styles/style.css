@@ -77,6 +77,9 @@ h1, h2, h3, h4 { font-family: var(--font-heading); }
 .btn-outline { background: transparent; border: 2px solid var(--sanus-blue-main); color: var(--sanus-blue-main); }
 .btn-outline:hover { background-color: var(--sanus-blue-main); color: #fff; }
 .btn-block { width: 100%; }
+.sanus-swal { border-radius: var(--radius-md); font-family: var(--font-body); }
+.sanus-swal .swal2-title { color: var(--sanus-blue-dark); font-family: var(--font-heading); }
+.sanus-swal .swal2-html-container { color: var(--sanus-text-muted); }
 .btn-back { background: none; border: none; color: var(--sanus-blue-main); font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; margin-bottom: 20px; font-family: var(--font-body); font-size: 14px; }
 .cart-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 30px; }
 .cart-items-list { background: var(--sanus-surface); padding: 20px; border-radius: var(--radius-md); box-shadow: var(--shadow-subtle); }
@@ -92,7 +95,8 @@ h1, h2, h3, h4 { font-family: var(--font-heading); }
 .method-tab.active { border-color: var(--sanus-blue-main); background-color: #f0f9ff; color: var(--sanus-blue-main); }
 .form-group { margin-bottom: 15px; }
 .form-group label { display: block; font-size: 12px; font-weight: 700; color: var(--sanus-text-muted); margin-bottom: 5px; }
-.form-group input, .form-group textarea { width: 100%; padding: 12px; border: 1px solid var(--sanus-border); border-radius: var(--radius-sm); font-size: 15px; font-family: var(--font-body); }
+.form-group input, .form-group textarea, .form-group select, .mp-card-field { width: 100%; padding: 12px; border: 1px solid var(--sanus-border); border-radius: var(--radius-sm); font-size: 15px; font-family: var(--font-body); }
+.mp-card-field { min-height: 46px; background: #fff; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .pix-box { text-align: center; padding: 20px 0; }
 .qr-placeholder { margin: 0 auto 15px; }

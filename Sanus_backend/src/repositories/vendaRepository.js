@@ -14,9 +14,9 @@ async function criarVenda({id_Cliente, id_Funcionario, nfe, canal_Venda, forma_P
 //Busca todas as vendas sem fitro
 async function listarVendas(){
     const [result] = await db.query(
-        "CALL sp_ViewVendas"
+        "CALL sp_ViewVendas()"
     );
-    return result;
+    return result[0];
 }
 
 //Criando função de buscar venda por id
@@ -25,7 +25,7 @@ async function buscarVendaPorId({id}){
         "CALL sp_ViewVendas(?)",
         [id]
     );
-    return result;
+    return result[0];
 }
 
 //Criando função de atualizar venda
@@ -79,6 +79,7 @@ async function faturamentoPorFormaPagamento() {
 //Utilizando todas as funções
 module.exports = {
     criarVenda,
+    buscarVenda,
     buscarVendaPorId,
     listarVendas,
     atualizarVenda,

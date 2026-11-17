@@ -1,10 +1,13 @@
 const db = require("../connection/db");
+const bcrypt = require("bcryptjs");
+const SALT_ROUND = 10;
 
 //Criando funcionário
 async function criarFuncionario({nome, cpf, email, senha, data_nasc, telefone, data_admissao, cargo, situacao}) {
+    const senhaHash = await bcrypt.hash(senha, SALT_ROUND);
     const [result] = await db.query(
-        `CALL  sp_AddFuncionario (? , ?, ?, ?, ?, ?, ?, ?)`,
-        [nome, cpf, email, senha, data_nasc, telefone, data_admissao, cargo, situacao]
+        "CALL sp_AddFuncionario(?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [nome, cpf, email, senhaHash, data_nasc, telefone, data_admissao, cargo, situacao]
     );
 
     return result;
@@ -43,7 +46,7 @@ async function atualizarFuncionario({id, data_admissao, cargo}){
         `UPDATE Tbl_Funcionario
         SET data_admissao = ?,cargo = ?
         WHERE id = ? `,
-        [data_admissao, id, cargo]
+        [data_admissao, cargo, id]
     );
     return result;
 }

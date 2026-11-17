@@ -6,11 +6,18 @@ const routes = require("./src/routes")
 
 const cors = require('cors');
 
-const { port } = require('./src/config');
+const { port, corsOrigins } = require('./src/config');
 
 //Permite receber o JSON
 app.use(express.json());
-app.use(cors());
+app.use(cors({
+    origin(origin, callback) {
+        // Requisições sem Origin, como health checks, não são chamadas de navegadores.
+        return callback(null, !origin || corsOrigins.includes(origin));
+    },
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Authorization", "Content-Type"],
+}));
 app.use("/api", routes);
 
 app.get("/teste", (req, res) => {

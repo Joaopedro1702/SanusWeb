@@ -61,7 +61,7 @@
             <h2 class="section-title">FALE CONOSCO</h2>
             <div class="content-box">
                 <h3>Envie sua mensagem</h3>
-                <form onsubmit="event.preventDefault(); alert('Mensagem enviada com sucesso!'); window.location.href='../index.html';" style="margin-top: 20px;">
+                <form onsubmit="event.preventDefault(); exibirMensagem('Mensagem enviada com sucesso!', 'success').then(() => window.location.href='../index.html');" style="margin-top: 20px;">
                     <div class="form-group"><label>NOME COMPLETO</label><input type="text" placeholder="Seu nome" required></div>
                     <div class="form-group"><label>E-MAIL</label><input type="email" placeholder="seu@email.com" required></div>
                     <div class="form-group"><label>ASSUNTO</label><input type="text" placeholder="Ex: Dúvida sobre receita" required></div>
@@ -160,6 +160,7 @@
         </div>
     </footer>
     <script>window.ROOT_PATH = "../";</script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="../src/scripts/data.js"></script>
     <script src="../src/scripts/main.js"></script>
 </body>

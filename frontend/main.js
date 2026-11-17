@@ -1,7 +1,8 @@
 //nossos fetchs
 
 //Produtos
-const API_URL = "https://sanus-backend.onrender.com";
+//const API_URL = "https://sanus-backend.onrender.com";
+const API_URL = "http://localhost:3000/api";
 
 async function carregarProdutos(){
     const token = localStorage.getItem("sanus_token");

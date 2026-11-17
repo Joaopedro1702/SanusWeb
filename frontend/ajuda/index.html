@@ -66,7 +66,7 @@
                     <label>QUAL É A SUA DÚVIDA?</label>
                     <textarea rows="4" style="width: 100%; padding: 10px; border: 1px solid var(--sanus-border); border-radius: var(--radius-sm);" placeholder="Escreva sua mensagem aqui..."></textarea>
                 </div>
-                <button class="btn btn-primary" onclick="alert('Mensagem enviada com sucesso! Retornaremos em breve.')">ENVIAR MENSAGEM</button>
+                <button class="btn btn-primary" onclick="exibirMensagem('Mensagem enviada com sucesso! Retornaremos em breve.', 'success')">ENVIAR MENSAGEM</button>
             </div>
         </section>
     </main>
@@ -159,6 +159,7 @@
         </div>
     </footer>
     <script>window.ROOT_PATH = "../";</script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="../src/scripts/data.js"></script>
     <script src="../src/scripts/main.js"></script>
 </body>

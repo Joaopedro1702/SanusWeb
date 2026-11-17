@@ -1,5 +1,29 @@
 
-const API_URL = "https://sanus-backend.onrender.com/api";
+const API_URL = ["localhost", "127.0.0.1"].includes(window.location.hostname)
+    ? "http://127.0.0.1:3000/api"
+    : "https://sanus-backend.onrender.com/api";
+let cardForm;
+let referenciaPixAtual;
+
+function exibirMensagem(texto, tipo = "info") {
+    const titulos = {
+        success: "Sucesso!",
+        error: "Ops!",
+        warning: "Atenção",
+        info: "Aviso"
+    };
+
+    return Swal.fire({
+        icon: tipo,
+        title: titulos[tipo] || titulos.info,
+        text: texto,
+        confirmButtonText: "Entendi",
+        confirmButtonColor: "#0077c8",
+        customClass: {
+            popup: "sanus-swal"
+        }
+    });
+}
 
 document.addEventListener("DOMContentLoaded", () => {
     updateCartCount();
@@ -20,6 +44,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (document.getElementById("checkoutTotal")) {
         updateCheckoutSummary();
+        iniciarCheckoutApi();
+    }
+
+    if (document.getElementById("paymentStatus")) {
+        verificarStatusPedido();
     }
 });
 
@@ -64,7 +93,7 @@ async function carregarProdutos() {
         renderProducts(products, "productGrid");
     } catch (erro) {
         console.error(erro);
-        alert("Não foi possível carregar os produtos. Tente novamente em instantes.");
+        exibirMensagem("Não foi possível carregar os produtos. Tente novamente em instantes.", "error");
     }
 }
 
@@ -86,7 +115,7 @@ function configurarLogin() {
                 carregarProdutos();
             }
         } catch (erro) {
-            alert(erro.message);
+            exibirMensagem(erro.message, "error");
         }
     }, true);
 }
@@ -119,48 +148,76 @@ function configurarCadastro() {
     if (!formulario.querySelector("#cadastroCpf")) {
         const grupoCpf = document.createElement("div");
         grupoCpf.className = "form-group";
-        grupoCpf.innerHTML = '<label>CPF</label><input id="cadastroCpf" type="text" inputmode="numeric" pattern="[0-9]{11}" maxlength="11" placeholder="Somente números" required>';
+        grupoCpf.innerHTML = '<label>CPF</label><input id="cadastroCpf" type="text" inputmode="numeric" pattern="[0-9]{3}\\.[0-9]{3}\\.[0-9]{3}-[0-9]{2}" maxlength="14" placeholder="000.000.000-00" required>';
         campoEmail.closest(".form-group").insertAdjacentElement("afterend", grupoCpf);
 
         const grupoDataNascimento = document.createElement("div");
         grupoDataNascimento.className = "form-group";
         grupoDataNascimento.innerHTML = '<label>DATA DE NASCIMENTO</label><input id="cadastroDataNascimento" type="date" required>';
         grupoCpf.insertAdjacentElement("afterend", grupoDataNascimento);
+
+        const grupoTelefone = document.createElement("div");
+        grupoTelefone.className = "form-group";
+        grupoTelefone.innerHTML = '<label>TELEFONE</label><input id="cadastroTelefone" type="text" inputmode="tel" pattern="\\([0-9]{2}\\)[0-9]{5}-[0-9]{4}" maxlength="14" placeholder="(00)00000-0000" required>';
+        grupoDataNascimento.insertAdjacentElement("afterend", grupoTelefone);
     }
+
+    const campoCpf = formulario.querySelector("#cadastroCpf");
+
+    campoCpf.addEventListener("input", () => {
+        let cpf = campoCpf.value.replace(/\D/g, "").slice(0, 11);
+
+        cpf = cpf
+            .replace(/(\d{3})(\d)/, "$1.$2")
+            .replace(/(\d{3})(\d)/, "$1.$2")
+            .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+
+        campoCpf.value = cpf;
+    });
+
+    const campoTelefone = formulario.querySelector("#cadastroTelefone");
+    campoTelefone.addEventListener("input", () => {
+        const telefone = campoTelefone.value.replace(/\D/g, "").slice(0, 11);
+        campoTelefone.value = telefone
+            .replace(/^(\d{2})(\d)/, "($1)$2")
+            .replace(/(\d{5})(\d)/, "$1-$2");
+    });
 
     formulario.addEventListener("submit", async (event) => {
         event.preventDefault();
         event.stopImmediatePropagation();
 
-        const [campoNome, campoEmailCadastro, campoSenha] = formulario.querySelectorAll("input:not(#cadastroCpf):not(#cadastroDataNascimento)");
-        const campoCpf = formulario.querySelector("#cadastroCpf");
+        const campoNome = formulario.querySelector('.form-group input[type="text"]');
+        const campoEmailCadastro = formulario.querySelector('input[type="email"]');
+        const campoSenha = formulario.querySelector('input[type="password"]');
         const campoDataNascimento = formulario.querySelector("#cadastroDataNascimento");
 
         try {
             await criarUsuario(
                 campoNome.value,
-                campoCpf.value,
+                campoCpf.value.replace(/\D/g, ""),
                 campoEmailCadastro.value,
                 campoSenha.value,
-                campoDataNascimento.value
+                campoDataNascimento.value,
+                campoTelefone.value
             );
 
             document.querySelector('#auth-login input[type="email"]').value = campoEmailCadastro.value;
             switchAuthTab("login");
-            alert("Cadastro realizado. Agora informe sua senha para entrar.");
+            exibirMensagem("Cadastro realizado. Agora informe sua senha para entrar.", "success");
         } catch (erro) {
-            alert(erro.message);
+            exibirMensagem(erro.message, "error");
         }
     }, true);
 }
 
-async function criarUsuario(nome, cpf, email, senha, data_Nasc) {
+async function criarUsuario(nome, cpf, email, senha, data_Nasc, telefone) {
     const resposta = await fetch(`${API_URL}/usuarios`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
         },
-        body: JSON.stringify({ nome, cpf, email, senha, data_Nasc })
+        body: JSON.stringify({ nome, cpf, email, senha, data_Nasc, telefone })
     });
 
     const dados = await resposta.json();
@@ -216,7 +273,7 @@ function addToCart(id) {
         let cart = getCart();
         cart.push(product);
         saveCart(cart);
-        alert(`${product.title} foi adicionado ao seu carrinho.`);
+        exibirMensagem(`${product.title} foi adicionado ao seu carrinho.`, "success");
     }
 }
 
@@ -283,23 +340,83 @@ function selectPaymentMethod(method) {
     }
 }
 
-function processPayment() {
-    let cart = getCart();
-    if (cart.length === 0) { alert("O seu carrinho está vazio."); return; }
-    const cardNum = document.getElementById("cardNum").value;
-    const isCard = !document.getElementById("form-card-section").classList.contains("hidden");
-    if (isCard && cardNum.startsWith("0000")) {
-        window.location.href = window.ROOT_PATH + "falha/index.html"; 
-    } else {
-        saveCart([]); 
-        window.location.href = window.ROOT_PATH + "sucesso/index.html";
+async function processPayment() {
+    const cart = getCart();
+    if (cart.length === 0) {
+        exibirMensagem("O seu carrinho está vazio.", "warning");
+        return;
     }
+
+    if (!localStorage.getItem("sanus_token")) {
+        exibirMensagem("Entre na sua conta para continuar com o pagamento.", "warning");
+        openModal("authModal");
+        return;
+    }
+
+    const isPix = !document.getElementById("pix-section").classList.contains("hidden");
+    if (isPix) {
+        await processarPix();
+        return;
+    }
+
+    if (!cardForm) {
+        exibirMensagem("O formulário de cartão ainda está carregando.", "info");
+        return;
+    }
+    document.getElementById("form-checkout").requestSubmit();
 }
 
-function copyPixCode() {
-    navigator.clipboard.writeText("00020126580014BR.GOV.BCB.PIX0114SANUSPAGAMENTOS");
-    alert("Código PIX copiado.");
+function itensDoCarrinho() {
+    const quantidades = new Map();
+    for (const item of getCart()) {
+        const id = Number(item.id);
+        if (Number.isInteger(id) && id > 0) quantidades.set(id, (quantidades.get(id) || 0) + 1);
+    }
+    return [...quantidades].map(([produtoId, quantidade]) => ({ produtoId, quantidade }));
 }
+
+function totalDoCarrinho() {
+    return getCart().reduce((total, item) => total + Number(item.price || 0), 0);
+}
+
+async function iniciarCheckoutApi() {
+    try {
+        const resposta = await fetch(`${API_URL}/pagamentos/config`);
+        const config = await resposta.json();
+        if (!resposta.ok) throw new Error(config.error || "Não foi possível carregar o pagamento.");
+        if (!window.MercadoPago) throw new Error("SDK do Mercado Pago não foi carregado.");
+
+        const mp = new MercadoPago(config.publicKey, { locale: "pt-BR" });
+        cardForm = mp.cardForm({
+            amount: totalDoCarrinho().toFixed(2),
+            iframe: true,
+            form: {
+                id: "form-checkout",
+                cardNumber: { id: "form-checkout__cardNumber", placeholder: "0000 0000 0000 0000" },
+                expirationDate: { id: "form-checkout__expirationDate", placeholder: "MM/AA" },
+                securityCode: { id: "form-checkout__securityCode", placeholder: "123" },
+                cardholderName: { id: "form-checkout__cardholderName", placeholder: "Nome do titular" },
+                issuer: { id: "form-checkout__issuer", placeholder: "Banco emissor" },
+                installments: { id: "form-checkout__installments", placeholder: "Parcelas" },
+                identificationType: { id: "form-checkout__identificationType", placeholder: "Tipo" },
+                identificationNumber: { id: "form-checkout__identificationNumber", placeholder: "CPF" },
+                cardholderEmail: { id: "form-checkout__cardholderEmail", placeholder: "seu@email.com" },
+            },
+            callbacks: {
+                onFormMounted: (error) => {
+                    if (error) console.error("Erro ao montar formulário de cartão:", error);
+                },
+                onSubmit: async (event) => {
+                    event.preventDefault();
+                    await processarCartao(cardForm.getCardFormData());
+                },
+            },
+        });
+    } catch (error) {
+        console.error(error);
+        exibirMensagem(error.message, "error");
+    }
+};
 
 function openModal(id) { const m = document.getElementById(id); if(m) m.classList.add("active"); }
 function closeModal(id) { const m = document.getElementById(id); if(m) m.classList.remove("active"); }

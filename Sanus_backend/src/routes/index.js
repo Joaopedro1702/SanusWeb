@@ -15,6 +15,7 @@ const validarCpf = require("../middleware/validaCpf.js");
 const validarTelefone = require("../middleware/validaTelefone.js");
 const db = require("../connection/db.js");
 const crypto = require("crypto");
+const vendaUsuario = require("../repositories/vendaRepository");
 const {
   criarClientesMercadoPago,
   WebhookSignatureValidator,
@@ -149,8 +150,8 @@ crud("produtos", {
   deletar: produto.deletarProduto,
 });
 
-<<<<<<< HEAD
 const estoque = require("../repositories/estoqueRepository");
+const { error } = require("console");
 crud("estoque", {
   criar: estoque.criarEstoque,
   buscar: estoque.buscarEstoquePorId,
@@ -172,196 +173,45 @@ crud("vendas", {
 //Routes para perfil
 
 router.get("/perfil", async (req, res) => {
-  const perfil = await usuarioRepositry.buscarPerfilUsuario({id: req.usuario.id});
+  const perfil = await usuarioRepo.buscarPerfilUsuario({id: req.usuario.id});
   if(!perfil) return res.status(404).json({error: "Usuário não encontrado"});
   res.json(perfil);
 });
 
-=======
-const venda = require("../repositories/vendaRepository");
-router.get("/vendas/:id", consultar(venda.buscarVendaPorId));
-
-const pagamentoVenda = require("../repositories/pagamentoVendaRepository");
-router.get("/pagamentos-venda/:id", consultar(pagamentoVenda.buscarPagamentoVendaPorId));
-
-async function criarVendaOnline(idUsuario, itensSolicitados) {
-  if (!Array.isArray(itensSolicitados) || itensSolicitados.length === 0 || itensSolicitados.length > 100) {
-    const error = new Error("Carrinho vazio ou inválido.");
-    error.status = 400;
-    throw error;
-  }
-
-  const [[cliente]] = await db.query(
-    `SELECT c.id, u.email, u.cpf
-     FROM Tbl_Cliente c
-     JOIN Tbl_Usuario u ON u.id = c.id_Usuario
-     WHERE c.id_Usuario = ? LIMIT 1`,
-    [idUsuario],
-  );
-  if (!cliente) {
-    const error = new Error("Sua conta não está vinculada a um cliente.");
-    error.status = 403;
-    throw error;
-  }
-
-  const itensAgrupados = new Map();
-  for (const item of itensSolicitados) {
-    const produtoId = Number(item?.produtoId);
-    const quantidade = Number(item?.quantidade);
-    if (!Number.isSafeInteger(produtoId) || produtoId <= 0 || !Number.isSafeInteger(quantidade) || quantidade <= 0) {
-      const error = new Error("Produto ou quantidade inválidos.");
-      error.status = 400;
-      throw error;
-    }
-    itensAgrupados.set(produtoId, (itensAgrupados.get(produtoId) || 0) + quantidade);
-  }
-
-  const ids = [...itensAgrupados.keys()];
-  const placeholders = ids.map(() => "?").join(",");
-  const [produtos] = await db.query(
-    `SELECT id, nome, preco FROM Tbl_Produto WHERE id IN (${placeholders})`,
-    ids,
-  );
-  if (produtos.length !== ids.length) {
-    const error = new Error("Um ou mais produtos não foram encontrados.");
-    error.status = 400;
-    throw error;
-  }
-
-  const produtosPorId = new Map(produtos.map((produto) => [Number(produto.id), produto]));
-  const itens = ids.map((produtoId) => {
-    const produto = produtosPorId.get(produtoId);
-    return {
-      id_Produto: Number(produto.id),
-      qnt: itensAgrupados.get(produtoId),
-      valor_Unitario: Number(produto.preco),
-    };
-  });
-  const valor = Math.round(itens.reduce((total, item) => total + item.qnt * item.valor_Unitario, 0) * 100) / 100;
-  const referencia = crypto.randomUUID();
-  const conexao = await db.getConnection();
-
+router.put("/perfil", validarTelefone, async (req, res, next) => {
   try {
-    await conexao.beginTransaction();
-    // Vendas online não possuem funcionário ou NFe antes da confirmação do pagamento.
-    const [resultadoVenda] = await conexao.query(
-      `INSERT INTO Tbl_Venda
-       (id_Cliente, id_Funcionario, nfe, valor, data_Venda, canal_Venda, status_pagamento, referencia)
-       VALUES (?, NULL, NULL, ?, NOW(), 'Site', 'pending', ?)`,
-      [cliente.id, valor, referencia],
-    );
+    const { nome, email, data_Nasc, telefone } = req.body;
 
-    for (const item of itens) {
-      await conexao.query(
-        `INSERT INTO Tbl_Produto_Venda (id_Venda, id_Produto, qnt, valor_Unitario)
-         VALUES (?, ?, ?, ?)`,
-        [resultadoVenda.insertId, item.id_Produto, item.qnt, item.valor_Unitario],
-      );
-    }
-    await conexao.commit();
-    return { cliente, itens, valor, referencia, vendaId: resultadoVenda.insertId };
-  } catch (error) {
-    await conexao.rollback();
-    throw error;
-  } finally {
-    conexao.release();
-  }
-}
-
-router.post("/pagamentos", async (req, res) => {
-  let pedido;
-  try {
-    const tipo = req.body?.tipo;
-    if (!["pix", "cartao"].includes(tipo)) {
-      return res.status(400).json({ error: "Forma de pagamento inválida." });
+    if (!nome?.trim() || !email?.trim() || !data_Nasc) {
+      return res.status(400).json({ error: "Preencha nome, e-mail e data de nascimento." });
     }
 
-    const dadosCartao = req.body?.cartao || {};
-    if (tipo === "cartao") {
-      const installments = Number(dadosCartao.installments);
-      if (!dadosCartao.token || !dadosCartao.payment_method_id || !Number.isSafeInteger(installments) || installments < 1) {
-        return res.status(400).json({ error: "Dados do cartão inválidos." });
-      }
-    }
-
-    pedido = await criarVendaOnline(req.usuario.id, req.body?.itens);
-    const { payment } = criarClientesMercadoPago();
-    const corpo = {
-      transaction_amount: pedido.valor,
-      description: `Pedido SANUS ${pedido.referencia}`,
-      external_reference: pedido.referencia,
-      notification_url: `${publicBaseUrl.replace(/\/$/, "")}/api/pagamentos/webhook`,
-      payer: {
-        email: pedido.cliente.email,
-        identification: { type: "CPF", number: pedido.cliente.cpf },
-      },
-    };
-
-    if (tipo === "pix") {
-      corpo.payment_method_id = "pix";
-    } else {
-      const installments = Number(dadosCartao.installments);
-      corpo.token = dadosCartao.token;
-      corpo.payment_method_id = dadosCartao.payment_method_id;
-      corpo.installments = installments;
-      const issuerId = Number(dadosCartao.issuer_id);
-      if (Number.isSafeInteger(issuerId) && issuerId > 0) corpo.issuer_id = issuerId;
-    }
-
-    const pagamento = await payment.create({
-      body: corpo,
-      requestOptions: { idempotencyKey: pedido.referencia },
+    const perfil = await usuarioRepo.atualizarPerfilUsuario({
+      id: req.usuario.id,
+      nome: nome.trim(),
+      email: email.trim(),
+      data_Nasc,
+      telefone,
     });
 
-    await db.query(
-      `UPDATE Tbl_Venda
-       SET status_pagamento = ?, mp_payment_id = ?
-       WHERE referencia = ?`,
-      [pagamento.status || "pending", String(pagamento.id), pedido.referencia],
-    );
-
-    const transactionData = pagamento.point_of_interaction?.transaction_data || {};
-    return res.status(201).json({
-      referencia: pedido.referencia,
-      status: pagamento.status,
-      statusDetail: pagamento.status_detail,
-      qrCode: transactionData.qr_code || null,
-      qrCodeBase64: transactionData.qr_code_base64 || null,
-      ticketUrl: transactionData.ticket_url || null,
-    });
-  } catch (error) {
-    console.error("Erro ao processar pagamento:", error);
-    if (pedido?.referencia) {
-      await db.query(
-        "UPDATE Tbl_Venda SET status_pagamento = 'payment_error' WHERE referencia = ? AND status_pagamento = 'pending'",
-        [pedido.referencia],
-      ).catch((dbError) => console.error("Erro ao atualizar pedido com falha:", dbError));
-    }
-    const status = error.status || 500;
-    const mensagem = [400, 403, 503].includes(status)
-      ? error.message
-      : "Não foi possível processar o pagamento.";
-    return res.status(status).json({ error: mensagem });
+    if (!perfil) return res.status(404).json({ error: "Usuário não encontrado" });
+    return res.json(perfil);
+  } catch (erro) {
+    return next(erro);
   }
 });
 
-router.get("/pedidos/:referencia", async (req, res) => {
-  try {
-    const [vendas] = await db.query(
-      `SELECT v.referencia, v.valor, v.status_pagamento AS status, v.data_Venda AS criado_em
-       FROM Tbl_Venda v
-       JOIN Tbl_Cliente c ON c.id = v.id_Cliente
-       WHERE v.referencia = ? AND c.id_Usuario = ? LIMIT 1`,
-      [req.params.referencia, req.usuario.id],
-    );
-    if (!vendas[0]) return res.status(404).json({ error: "Pedido não encontrado." });
-    return res.json(vendas[0]);
-  } catch (error) {
-    console.error("Erro ao consultar pedido:", error);
-    return res.status(500).json({ error: "Não foi possível consultar o pedido." });
+//Rotas para pedido via token
+
+router.get("/perfil/pedidos", async (req,res, next) => {
+  try{
+    const pedidos = await vendaUsuario.pedidoToken({idUsuario: req.usuario.id});
+    return res.json(pedidos)
+  }catch(erro){
+    next(erro)
   }
-});
->>>>>>> 902c3042582463f53f189144c3faa1f6ec2e4b54
+})
+
 //Routes para o dashboard
 router.get("/dashboard/faturamento-tarja", dashboardController.getFaturamentoPorTarja);
 router.get("/dashboard/faturamento-forma-pagamento", dashboardController.getFaturamentoPorFormadePagamento);

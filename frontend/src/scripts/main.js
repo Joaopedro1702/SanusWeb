@@ -27,14 +27,50 @@ function exibirMensagem(texto, tipo = "info") {
 
 document.addEventListener("DOMContentLoaded", () => {
     updateCartCount();
+    atualizarBotaoPerfil();
     configurarLogin();
     configurarCadastro();
+
+    if (document.querySelector("#formDados")) {
+        dadosPerfil().catch((erro) => exibirMensagem(erro.message, "error"));
+
+        document.querySelector("#formDados").addEventListener("submit", async (event) => {
+            event.preventDefault();
+
+            try {
+                const resposta = await fetch(`${API_URL}/perfil`, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${localStorage.getItem("sanus_token")}`
+                    },
+                    body: JSON.stringify({
+                        nome: document.querySelector("#nome").value,
+                        email: document.querySelector("#email").value,
+                        telefone: document.querySelector("#telefone").value,
+                        data_Nasc: document.querySelector("#dataNasc").value
+                    })
+                });
+
+                const dados = await resposta.json();
+
+                if (!resposta.ok) {
+                    throw new Error(dados.error || "Não foi possível salvar os dados.");
+                }
+
+                localStorage.setItem("sanus_usuario", dados.nome);
+                document.querySelector("#perfilNome").textContent = dados.nome;
+                document.querySelector("#perfilEmail").textContent = dados.email;
+                exibirMensagem("Dados atualizados com sucesso.", "success");
+            } catch (erro) {
+                exibirMensagem(erro.message, "error");
+            }
+        });
+    }
 
     if (document.getElementById("productGrid")) {
         if (localStorage.getItem("sanus_token")) {
             carregarProdutos();
-        } else {
-            openModal("authModal");
         }
     }
 
@@ -70,6 +106,7 @@ async function carregarProdutos() {
         if (resposta.status === 401) {
             localStorage.removeItem("sanus_token");
             localStorage.removeItem("sanus_usuario");
+            atualizarBotaoPerfil();
             openModal("authModal");
             return;
         }
@@ -110,6 +147,7 @@ function configurarLogin() {
         try {
             await fazerLogin(campoEmail.value, campoSenha.value);
             closeModal("authModal");
+            atualizarBotaoPerfil();
 
             if (document.getElementById("productGrid")) {
                 carregarProdutos();
@@ -137,6 +175,26 @@ async function fazerLogin(email, senha) {
 
     localStorage.setItem("sanus_token", dados.token);
     localStorage.setItem("sanus_usuario", dados.nome);
+}
+
+function atualizarBotaoPerfil() {
+    const usuarioEstaLogado = Boolean(localStorage.getItem("sanus_token"));
+
+    document.querySelectorAll("[data-profile-button]").forEach((botao) => {
+        const texto = botao.querySelector("span");
+        if (texto) texto.textContent = usuarioEstaLogado ? "MEU PERFIL" : "ENTRAR / CADASTRAR";
+        botao.setAttribute("aria-label", usuarioEstaLogado ? "Abrir meu perfil" : "Entrar ou criar uma conta");
+    });
+}
+
+function acessarPerfil() {
+    if (!localStorage.getItem("sanus_token")) {
+        switchAuthTab("login");
+        openModal("authModal");
+        return;
+    }
+
+    window.location.href = `${window.ROOT_PATH || ""}meu_perfil/index.html`;
 }
 
 function configurarCadastro() {
@@ -429,4 +487,43 @@ async function dadosPerfil(){
     const resposta = await fetch(`${API_URL}/perfil`, {
         headers: {Authorization: `Bearer ${localStorage.getItem("sanus_token")}`},
     });
+
+    const perfil = await resposta.json();
+
+    if (!resposta.ok) {
+        throw new Error(perfil.error || "Não foi possível pegar os dados do usuário");
+    }
+
+    document.querySelector("#perfilNome").textContent = perfil.nome;
+    document.querySelector("#perfilEmail").textContent = perfil.email;
+
+    document.querySelector("#nome").value = perfil.nome || "";
+    document.querySelector("#email").value = perfil.email || "";
+    document.querySelector("#telefone").value = perfil.telefone || "";
+    document.querySelector("#cpf").value = perfil.cpf || "";
+    document.querySelector("#dataNasc").value =
+        perfil.data_Nasc?.slice(0, 10) || "";
+
+    if (perfil.foto_url) {
+        const foto = document.querySelector("#perfilFoto");
+        foto.src = perfil.foto_url;
+        foto.hidden = false;
+        document.querySelector("#perfilFotoIcone").hidden = true;
+    }
+}
+
+//Listar pedidos por token de usuario
+
+async function pedidosPerfil(){
+        const resposta = await fetch(`${API_URL}/perfil/pedidos`, {
+            headers: {Authorization: `Bearer ${localStorage.getItem("sanus_token")}`},
+    });
+    const pedidos = await resposta.json()
+
+    if(!resposta.ok){
+        throw new Error(pedidos.error || "Não foi possivel carregar os seus pedidos.")
+    }
+
+    document.querySelector("#listaPedidos").innerHTML = "";
+    document.querySelector("#pedidosVazio").hidden = pedidos.length > 0;
 }

@@ -76,16 +76,34 @@ async function faturamentoPorFormaPagamento() {
     return result;
 }
 
+//Vai buscar as vendas por usuario via token
+
+async function pedidoToken(){
+    const [resultado] = await db.query(
+                `
+        SELECT
+            v.referencia,
+            v.data_Venda,
+            v.valor,
+            v.status_pagamento
+        FROM Tbl_Venda v
+        INNER JOIN Tbl_Cliente c ON c.id = v.id_Cliente
+        WHERE c.id_Usuario = ?
+        ORDER BY v.data_Venda DESC
+        `
+    );
+}
+
 //Utilizando todas as funções
 module.exports = {
     criarVenda,
-    buscarVenda,
     buscarVendaPorId,
     listarVendas,
     atualizarVenda,
     deletarVenda,
     faturamentoPorTarjaEMes,
-    faturamentoPorFormaPagamento
+    faturamentoPorFormaPagamento,
+    pedidoToken
 };
 
 

@@ -218,7 +218,7 @@ router.post("/perfil/logout",(req, res) => {
     });
   });
 
-router.get("perfil/foto_perfil", async (req, res, next) => {
+router.get("/perfil/foto_perfil", async (req, res, next) => {
   try{
     const resposta = await usuarioRepo.fotoPerfil({idUsuario: req.usuario.id});
 

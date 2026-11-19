@@ -489,6 +489,18 @@ async function dadosPerfil(){
     });
 
     const perfil = await resposta.json();
+    const urlFoto = await fotoPerfil();
+    const foto = document.querySelector("#perfilFoto");
+    const icone = document.querySelector("#perfilFotoIcone");
+
+    if (urlFoto){
+        foto.src = urlFoto;
+    } else {
+        foto.removeAttribute("src");
+    }
+
+    foto.hidden = !urlFoto;
+    icone.hidden = Boolean(urlFoto);
 
     if (!resposta.ok) {
         throw new Error(perfil.error || "Não foi possível pegar os dados do usuário");
@@ -547,4 +559,25 @@ async function logout(){
     }catch(erro){
         console.error("Erro ao sair: ", erro)
     }
+}
+
+async function fotoPerfil(){
+        const resposta = await fetch(`${API_URL}/perfil/foto_perfil`, {
+            method: 'PUT',
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem("sanus_token")}`
+            }
+        });
+
+        if (resposta.status === 404) {
+            localStorage.removeItem("sanus_foto_perfil");
+            return null;
+        }
+        const dados = await resposta.json();
+
+        if(!resposta.ok){
+            throw new Error(dados.error || "Não foi possível carregar a foto de perfil.")
+        }
+        localStorage.setItem("sanus_foto_perfil", dados.foto_perfil);
+        return dados.foto_perfil;
 }

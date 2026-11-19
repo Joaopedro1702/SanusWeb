@@ -92,6 +92,7 @@ async function pedidoToken(){
         ORDER BY v.data_Venda DESC
         `
     );
+    return resultado[0].foto_perfil ?? null;
 }
 
 //Utilizando todas as funções

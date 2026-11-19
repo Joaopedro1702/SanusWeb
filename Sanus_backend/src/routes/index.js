@@ -214,9 +214,25 @@ router.get("/perfil/pedidos", async (req,res, next) => {
 
 router.post("/perfil/logout",(req, res) => {
     res.json({
-      mensagem: 'Logou realizado com sucesso!'
+      mensagem: 'Logout realizado com sucesso!'
     });
   });
+
+router.put("perfil/foto_usuario", async (req, res, next) => {
+  try{
+    const resposta = await usuarioRepo.fotoPerfil({idUsuario: req.usuario.id});
+
+    if(!resposta.ok){
+      return res.status(404).json({
+        error: "Foto de perfil não encontrada."
+      });
+    }
+
+    return res.json({foto_perfil: resposta});
+  }catch(erro){
+    return next(erro)
+  }
+})
 
 //Routes para o dashboard
 router.get("/dashboard/faturamento-tarja", dashboardController.getFaturamentoPorTarja);

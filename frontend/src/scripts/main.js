@@ -563,7 +563,6 @@ async function logout(){
 
 async function fotoPerfil(){
         const resposta = await fetch(`${API_URL}/perfil/foto_perfil`, {
-            method: 'PUT',
             headers: {
                 Authorization: `Bearer ${localStorage.getItem("sanus_token")}`
             }

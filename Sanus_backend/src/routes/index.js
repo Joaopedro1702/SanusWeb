@@ -210,7 +210,13 @@ router.get("/perfil/pedidos", async (req,res, next) => {
   }catch(erro){
     next(erro)
   }
-})
+});
+
+router.post("/perfil/logout",(req, res) => {
+    res.json({
+      mensagem: 'Logou realizado com sucesso!'
+    });
+  });
 
 //Routes para o dashboard
 router.get("/dashboard/faturamento-tarja", dashboardController.getFaturamentoPorTarja);

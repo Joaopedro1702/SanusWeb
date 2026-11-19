@@ -527,3 +527,24 @@ async function pedidosPerfil(){
     document.querySelector("#listaPedidos").innerHTML = "";
     document.querySelector("#pedidosVazio").hidden = pedidos.length > 0;
 }
+
+//Função fetch de logout
+async function logout(){
+    try{
+        const resposta = await fetch(`${API_URL}/perfil/logout`, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem("sanus_token")}`
+            }
+        });
+        if(!resposta.ok){
+            throw new Error("Não foi possível sair da conta");
+        }
+            localStorage.removeItem('sanus_usuario');
+            localStorage.removeItem("sanus_token");
+            atualizarBotaoPerfil();
+            window.location.href = `${window.ROOT_PATH || ""}index.html`;        
+    }catch(erro){
+        console.error("Erro ao sair: ", erro)
+    }
+}

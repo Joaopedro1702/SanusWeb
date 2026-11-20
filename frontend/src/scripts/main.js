@@ -33,30 +33,29 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const inputFoto = document.querySelector("#inputFoto");
 
-    if(inputFoto){
-        inputFoto.addEventListener("change", async (event) =>{
+    if (inputFoto) {
+        inputFoto.addEventListener("change", async (event) => {
             const arquivo = event.target.files[0];
 
-            if(!arquivo){
-                try{
-                    const fotoUrl = await carregarFoto(arquivo);
+            if (!arquivo) return;
 
-                    const imagem = document.querySelector("#perfilFoto");
-                    const icone = document.querySelector("#perfilFotoIcone");
+            try {
+                const fotoUrl = await carregarFoto(arquivo);
+                const imagem = document.querySelector("#perfilFoto");
+                const icone = document.querySelector("#perfilFotoIcone");
 
-                    imagem.src = fotoUrl;
-                    imagem.hidden = false;
-                    icone.hidden = true;
+                imagem.src = fotoUrl;
+                imagem.hidden = false;
+                icone.hidden = true;
 
-                    localStorage.setItem("sanus_foto_perfil", fotoUrl);
-                    exibirMensagem("Imagem de perfil atualizada com sucesso!", success);
-                }catch(erro){
-                    exibirMensagem(erro.message, "error")
-                } finally {
-                    event.target.value = "";
-                }
+                localStorage.setItem("sanus_foto_perfil", fotoUrl);
+                exibirMensagem("Imagem de perfil atualizada com sucesso!", "success");
+            } catch (erro) {
+                exibirMensagem(erro.message, "error");
+            } finally {
+                event.target.value = "";
             }
-        })
+        });
     }
 
     if (document.querySelector("#formDados")) {
@@ -610,22 +609,22 @@ async function fotoPerfil(){
 }
 
 //Fetch que vai carregar foto de perfil na pagina de perfil
-async function carregarFoto() {
+async function carregarFoto(arquivo) {
     const dados = new FormData();
     dados.append("foto", arquivo);
-    const foto = await fetch(`${API_URL}/perfil/foto_perfil`, {
-        method: 'PUT',    
+    const resposta = await fetch(`${API_URL}/perfil/foto_perfil`, {
+        method: "PUT",
         headers: {
-                Authorization: `Bearer ${localStorage.getItem("sanus_token")}`
+            Authorization: `Bearer ${localStorage.getItem("sanus_token")}`
         },
         body: dados
     });
 
     const resultado = await resposta.json();
 
-    if(!foto.ok){
+    if (!resposta.ok) {
         throw new Error(resultado.error || "Não foi possível salvar a sua imagem.");
-
     }
+
     return resultado.foto_perfil;
 }

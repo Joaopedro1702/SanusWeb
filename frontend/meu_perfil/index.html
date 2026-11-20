@@ -72,7 +72,8 @@
                         <label class="btn btn-outline perfil-btn-foto" for="inputFoto">
                             <i class="ph ph-camera"></i> Alterar foto
                         </label>
-                        <input type="file" id="inputFoto" name="foto" accept="image/*" class="perfil-input-oculto">
+                        <input type="file" id="inputFoto" name="foto"
+                            accept="image/jpeg,image/png" class="perfil-input-oculto">
                     </div>
                     <nav class="perfil-card perfil-menu" aria-label="Seções do perfil">
                         <a href="#dados"><i class="ph ph-identification-card"></i> Dados pessoais</a>
@@ -82,7 +83,6 @@
                         <button type="button" id="btnSair" class="perfil-sair" onclick="logout()"><i class="ph ph-sign-out"></i> Sair da conta</button>
                     </nav>
                 </aside>
-
                 <div class="perfil-conteudo">
 
                     <section class="perfil-card" id="dados">

@@ -39,20 +39,35 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (!arquivo) return;
 
+            const imagem = document.querySelector("#perfilFoto");
+            const icone = document.querySelector("#perfilFotoIcone");
+            const imagemAnterior = imagem.getAttribute("src");
+            const imagemEstavaOculta = imagem.hidden;
+            const urlTemporaria = URL.createObjectURL(arquivo);
+
+            imagem.src = urlTemporaria;
+            imagem.hidden = false;
+            icone.hidden = true;
+
             try {
                 const fotoUrl = await carregarFoto(arquivo);
-                const imagem = document.querySelector("#perfilFoto");
-                const icone = document.querySelector("#perfilFotoIcone");
 
                 imagem.src = fotoUrl;
-                imagem.hidden = false;
-                icone.hidden = true;
-
                 localStorage.setItem("sanus_foto_perfil", fotoUrl);
                 exibirMensagem("Imagem de perfil atualizada com sucesso!", "success");
             } catch (erro) {
+                if (imagemAnterior) {
+                    imagem.src = imagemAnterior;
+                    imagem.hidden = imagemEstavaOculta;
+                    icone.hidden = imagemEstavaOculta;
+                } else {
+                    imagem.removeAttribute("src");
+                    imagem.hidden = true;
+                    icone.hidden = false;
+                }
                 exibirMensagem(erro.message, "error");
             } finally {
+                URL.revokeObjectURL(urlTemporaria);
                 event.target.value = "";
             }
         });

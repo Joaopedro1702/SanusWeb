@@ -1,4 +1,5 @@
 const express = require("express");
+const multer = require("multer");
 const router = express.Router();
 const bcrypt = require("bcryptjs");
 const jwt = require('jsonwebtoken');
@@ -218,21 +219,53 @@ router.post("/perfil/logout",(req, res) => {
     });
   });
 
-router.get("/perfil/foto_perfil", async (req, res, next) => {
-  try{
-    const resposta = await usuarioRepo.fotoPerfil({idUsuario: req.usuario.id});
+const receberFoto = multer({
+  limits: { fileSize: 2 * 1024 * 1024, files: 1, fields: 0 }
+}).single("foto");
 
-    if(!resposta.ok){
-      return res.status(404).json({
-        error: "Foto de perfil não encontrada."
-      });
+router.get("/perfil/foto_perfil", async (req, res, next) => {
+  try {
+    const foto = await usuarioRepo.fotoPerfil({ id: req.usuario.id });
+    if (!foto) {
+      return res.status(404).json({ error: "Foto de perfil não encontrada." });
+    }
+    return res.json({ foto_perfil: foto });
+  } catch (erro) {
+    return next(erro);
+  }
+});
+
+router.put("/perfil/foto_perfil", (req, res, next) => {
+  receberFoto(req, res, (erro) => {
+    if (erro?.code === "LIMIT_FILE_SIZE") {
+      return res.status(413).json({ error: "A foto deve ter até 2 MB." });
+    }
+    if (erro || !req.file) {
+      return res.status(400).json({ error: "Envie um arquivo no campo foto." });
+    }
+    return next();
+  });
+}, async (req, res, next) => {
+  try {
+    const { buffer, mimetype } = req.file;
+    const assinatura = buffer.subarray(0, 8).toString("hex");
+    const png = mimetype === "image/png" && assinatura === "89504e470d0a1a0a";
+    const jpeg = mimetype === "image/jpeg" && assinatura.startsWith("ffd8ff");
+    if (!png && !jpeg) {
+      return res.status(415).json({ error: "Escolha uma imagem JPEG ou PNG." });
     }
 
-    return res.json({foto_perfil: resposta});
-  }catch(erro){
-    return next(erro)
+    const foto = "data:" + mimetype + ";base64," + buffer.toString("base64");
+    const atualizou = await usuarioRepo.atualizarFotoPerfil({ id: req.usuario.id, foto });
+    if (!atualizou) {
+      return res.status(404).json({ error: "Usuário não encontrado." });
+    }
+    return res.json({ foto_perfil: foto });
+  } catch (erro) {
+    return next(erro);
   }
-})
+});
+
 
 //Routes para o dashboard
 router.get("/dashboard/faturamento-tarja", dashboardController.getFaturamentoPorTarja);

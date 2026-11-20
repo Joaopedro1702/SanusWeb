@@ -31,6 +31,34 @@ document.addEventListener("DOMContentLoaded", () => {
     configurarLogin();
     configurarCadastro();
 
+    const inputFoto = document.querySelector("#inputFoto");
+
+    if(inputFoto){
+        inputFoto.addEventListener("change", async (event) =>{
+            const arquivo = event.target.files[0];
+
+            if(!arquivo){
+                try{
+                    const fotoUrl = await carregarFoto(arquivo);
+
+                    const imagem = document.querySelector("#perfilFoto");
+                    const icone = document.querySelector("#perfilFotoIcone");
+
+                    imagem.src = fotoUrl;
+                    imagem.hidden = false;
+                    icone.hidden = true;
+
+                    localStorage.setItem("sanus_foto_perfil", fotoUrl);
+                    exibirMensagem("Imagem de perfil atualizada com sucesso!", success);
+                }catch(erro){
+                    exibirMensagem(erro.message, "error")
+                } finally {
+                    event.target.value = "";
+                }
+            }
+        })
+    }
+
     if (document.querySelector("#formDados")) {
         dadosPerfil().catch((erro) => exibirMensagem(erro.message, "error"));
 
@@ -579,4 +607,25 @@ async function fotoPerfil(){
         }
         localStorage.setItem("sanus_foto_perfil", dados.foto_perfil);
         return dados.foto_perfil;
+}
+
+//Fetch que vai carregar foto de perfil na pagina de perfil
+async function carregarFoto() {
+    const dados = new FormData();
+    dados.append("foto", arquivo);
+    const foto = await fetch(`${API_URL}/perfil/foto_perfil`, {
+        method: 'PUT',    
+        headers: {
+                Authorization: `Bearer ${localStorage.getItem("sanus_token")}`
+        },
+        body: dados
+    });
+
+    const resultado = await resposta.json();
+
+    if(!foto.ok){
+        throw new Error(resultado.error || "Não foi possível salvar a sua imagem.");
+
+    }
+    return resultado.foto_perfil;
 }

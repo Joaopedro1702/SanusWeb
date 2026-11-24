@@ -2,10 +2,10 @@ const db = require("../connection/db");
 
 //Criando produto
 
-async function cadastroProduto({nome, descricao, preco, tarja}){
+async function cadastroProduto({nome, descricao, preco, tarja, foto_produto}){
     const [result] = await db.query(
-        "INSERT INTO Tbl_Produto (nome, descricao, preco, tarja) VALUES (?, ?, ?, ?)",
-    [nome, descricao, preco, tarja]
+        "INSERT INTO Tbl_Produto (nome, descricao, preco, tarja, foto_produto) VALUES (?, ?, ?, ?, ?)",
+    [nome, descricao, preco, tarja, foto_produto]
     );
     return result;
 

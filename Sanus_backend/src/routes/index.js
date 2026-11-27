@@ -17,6 +17,7 @@ const validarTelefone = require("../middleware/validaTelefone.js");
 const db = require("../connection/db.js");
 const crypto = require("crypto");
 const vendaUsuario = require("../repositories/vendaRepository");
+const produtos = require("../repositories/produtoRepository.js");
 const {
   criarClientesMercadoPago,
   WebhookSignatureValidator,
@@ -264,6 +265,17 @@ router.put("/perfil/foto_perfil", (req, res, next) => {
   } catch (erro) {
     return next(erro);
   }
+});
+
+router.post("/cadastro/produto/imagem", (req, res) => {
+  produtos.cadastroProduto(req, res, (erro) => {
+    if(erro?.code === "LIMIT_FILE_SIZE"){
+      return res.status(413).json({error: "A imagem do produto deve ter até 2 MB."});
+    }
+    if (erro || !req.file) {
+      return res.status(400).json({ error: "Envie um arquivo no campo foto." });
+    }
+  });
 });
 
 

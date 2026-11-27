@@ -77,5 +77,6 @@ module.exports = {
     atualizarProduto,
     listarProdutos,
     listaProdutosPorId,
-    deletarProduto
+    deletarProduto,
+    viewQuantidadeProduto
 };

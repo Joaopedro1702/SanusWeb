@@ -184,7 +184,8 @@ CREATE TABLE Tbl_Produto (
     nome VARCHAR(100) NOT NULL,
     descricao VARCHAR(255) NOT NULL,
     preco DECIMAL(7,2) NOT NULL,
-    tarja VARCHAR(20) NOT NULL
+    tarja VARCHAR(20) NOT NULL,
+    foto_produto MEDIUMTEXT NULL
 );
 
 

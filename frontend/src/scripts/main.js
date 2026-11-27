@@ -166,6 +166,7 @@ async function carregarProdutos() {
             price: Number(produto.preco),
             oldPrice: Number(produto.preco),
             badge: produto.tarja || "",
+            foto: produto.foto_produto,
             icon: "ph-pill"
         }));
 
@@ -350,6 +351,17 @@ function renderProducts(items, targetId) {
                 </button>
             </div>
         `;
+        if (/^data:image\/(png|jpeg);base64,/.test(product.foto)) {
+            const caixa = card.querySelector(".product-img-box");
+            const imagem = document.createElement("img");
+            imagem.alt = product.title;
+            imagem.loading = "lazy";
+            imagem.style.cssText = "width:100%;height:100%;object-fit:contain";
+            imagem.addEventListener("load", () => caixa.querySelector("i").remove(), { once: true });
+            imagem.addEventListener("error", () => imagem.remove(), { once: true });
+            imagem.src = product.foto;
+            caixa.appendChild(imagem);
+        }
         grid.appendChild(card);
     });
 }

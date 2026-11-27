@@ -2,10 +2,10 @@ const db = require("../connection/db");
 
 //Criando produto
 
-async function cadastroProduto({nome, descricao, preco, tarja, foto_produto}){
+async function cadastroProduto({nome, descricao, preco, tarja, foto_produto = null, cod_barras}){
     const [result] = await db.query(
-        "INSERT INTO Tbl_Produto (nome, descricao, preco, tarja, foto_produto) VALUES (?, ?, ?, ?, ?)",
-    [nome, descricao, preco, tarja, foto_produto]
+        "INSERT INTO Tbl_Produto (nome, descricao, preco, tarja, foto_produto, cod_barras) VALUES (?, ?, ?, ?, ?, ?)",
+    [nome, descricao, preco, tarja, foto_produto, cod_barras]
     );
     return result;
 
@@ -72,7 +72,16 @@ async function deletarProduto({id}){
     return result
 }
 
+async function atualizarFotoProduto({ id, foto_produto }) {
+    const [resultado] = await db.query(
+        "UPDATE Tbl_Produto SET foto_produto = ? WHERE id = ?",
+        [foto_produto, id]
+    );
+    return resultado.affectedRows > 0;
+}
+
 module.exports = {
+    atualizarFotoProduto,
     cadastroProduto,
     atualizarProduto,
     listarProdutos,

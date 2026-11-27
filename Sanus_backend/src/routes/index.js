@@ -267,15 +267,40 @@ router.put("/perfil/foto_perfil", (req, res, next) => {
   }
 });
 
-router.post("/cadastro/produto/imagem", (req, res) => {
-  produtos.cadastroProduto(req, res, (erro) => {
-    if(erro?.code === "LIMIT_FILE_SIZE"){
-      return res.status(413).json({error: "A imagem do produto deve ter até 2 MB."});
+router.post("/cadastro/produto/imagem", (req, res, next) => {
+  receberFoto(req, res, (erro) => {
+    if (erro?.code === "LIMIT_FILE_SIZE") {
+      return res.status(413).json({ error: "A imagem do produto deve ter até 2 MB." });
     }
     if (erro || !req.file) {
       return res.status(400).json({ error: "Envie um arquivo no campo foto." });
     }
+    return next();
   });
+}, async (req, res, next) => {
+  try {
+    const id = Number(req.query.id);
+    if (!Number.isSafeInteger(id) || id <= 0) {
+      return res.status(400).json({ error: "Informe um ID de produto válido." });
+    }
+
+    const { buffer, mimetype } = req.file;
+    const assinatura = buffer.subarray(0, 8).toString("hex");
+    const png = mimetype === "image/png" && assinatura === "89504e470d0a1a0a";
+    const jpeg = mimetype === "image/jpeg" && assinatura.startsWith("ffd8ff");
+    if (!png && !jpeg) {
+      return res.status(415).json({ error: "Escolha uma imagem JPEG ou PNG." });
+    }
+
+    const foto_produto = "data:" + mimetype + ";base64," + buffer.toString("base64");
+    const atualizou = await produtos.atualizarFotoProduto({ id, foto_produto });
+    if (!atualizou) {
+      return res.status(404).json({ error: "Produto não encontrado." });
+    }
+    return res.json({ id, foto_produto });
+  } catch (erro) {
+    return next(erro);
+  }
 });
 
 
